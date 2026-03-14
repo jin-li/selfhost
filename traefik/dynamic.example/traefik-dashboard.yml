@@ -1,0 +1,15 @@
+http:
+  routers:
+    traefik-dashboard:
+      rule: "Host(`traefik.example.com`)"
+      service: api@internal
+      entryPoints:
+        - web
+      middlewares:
+        - auth
+
+  middlewares:
+    auth:
+      basicAuth:
+        users:
+          - username:hash_of_your_password
