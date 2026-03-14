@@ -1,9 +1,10 @@
 http:
   routers:
     portainer-router:
-      rule: "Host(`portainer.example.com`)"
       entryPoints:
-        - web
+        - websecure
+      tls: {}
+      rule: "Host(`portainer.example.com`)"
       service: portainer-service
       middlewares:
         - portainer-headers
