@@ -1,0 +1,21 @@
+http:
+  routers:
+    portainer-router:
+      rule: "Host(`portainer.example.com`)"
+      entryPoints:
+        - web
+      service: portainer-service
+      middlewares:
+        - portainer-headers
+
+  services:
+    portainer-service:
+      loadBalancer:
+        servers:
+          - url: "http://portainer:9000"
+
+  middlewares:
+    portainer-headers:
+      headers:
+        customRequestHeaders:
+          Origin: ""
