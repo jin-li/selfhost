@@ -1,0 +1,19 @@
+services:
+  whatsupdocker:
+    image: getwud/wud:8.2.2
+    container_name: wud
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WUD_AUTH_BASIC_ADMIN_USER=${WUD_AUTH_BASIC_ADMIN_USER}
+      - WUD_AUTH_BASIC_ADMIN_HASH=${WUD_AUTH_BASIC_ADMIN_HASH}
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.tag.transform=^(\d+\.\d+)\.\d+-.*$$ => $$1
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true
