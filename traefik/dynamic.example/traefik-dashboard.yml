@@ -4,7 +4,8 @@ http:
       rule: "Host(`traefik.example.com`)"
       service: api@internal
       entryPoints:
-        - web
+        - websecure
+      tls: {}
       middlewares:
         - auth
 
