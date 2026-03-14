@@ -1,0 +1,14 @@
+http:
+  routers:
+    wud-router:
+      entryPoints:
+        - websecure
+      tls: {}
+      rule: "Host(`wud.example.com`)"
+      service: wud-service
+
+  services:
+    wud-service:
+      loadBalancer:
+        servers:
+          - url: "http://wud:3000"
