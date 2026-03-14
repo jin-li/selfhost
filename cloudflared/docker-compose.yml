@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   cloudflared:
-    image: cloudflare/cloudflared:2025.9.1
+    image: cloudflare/cloudflared:2026.3.0
     container_name: cloudflared
     command: tunnel --no-autoupdate run ${TUNNEL_NAME}
     environment:
@@ -11,7 +11,10 @@ services:
       - ./config.yaml:/etc/cloudflared/config.yaml
       - ${CERT_FILE}:/etc/cloudflared/cert.pem
       - ${CRED_FILE}:/etc/cloudflared/creds/credentials.json
-    restart: unless-stopped
+    restart: always
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
     networks:
       - traefik-net
 
