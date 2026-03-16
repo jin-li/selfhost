@@ -1,0 +1,7 @@
+users:
+  user1:
+    password: "hash-of-user1-password"
+    displayname: "User One"
+    email: user@example.com
+    groups:
+      - admins

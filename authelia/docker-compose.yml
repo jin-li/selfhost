@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  authelia:
+    image: authelia/authelia:4.39.3
+    container_name: authelia
+    restart: always
+    volumes:
+      - ./config:/config:ro
+      - ${DATA_DIR}/data:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=${TZ}
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
+    networks:
+      traefik-net:
+        aliases:
+          - authelia
+
+networks:
+  traefik-net:
+    external: true
