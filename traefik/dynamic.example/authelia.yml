@@ -1,0 +1,14 @@
+http:
+  routers:
+    authelia-router:
+      entryPoints:
+        - websecure
+      tls: {}
+      rule: "Host(`authelia.example.com`)"
+      service: authelia-service
+
+  services:
+    authelia-service:
+      loadBalancer:
+        servers:
+          - url: "http://authelia:9091"
