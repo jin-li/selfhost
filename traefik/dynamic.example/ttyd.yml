@@ -1,0 +1,22 @@
+http:
+  routers:
+    ttyd:
+      entryPoints:
+        - websecure
+      tls: {}
+      rule: "Host(`terminal.example.com`)"
+      service: ttyd
+      middlewares:
+        - ttyd-auth
+
+  services:
+    ttyd:
+      loadBalancer:
+        servers:
+          - url: "http://ttyd:7681"
+  
+  middlewares:
+    ttyd-auth:
+      basicAuth:
+        users:
+          - "username:hashed_password"

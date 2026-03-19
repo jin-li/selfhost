@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  ttyd:
+    image: ubuntu:24.04
+    container_name: ttyd
+    restart: unless-stopped
+    command: >
+      bash -c "
+      apt update &&
+      apt install -y ttyd util-linux &&
+      ttyd -W -t fontFamily=\"${FONT_FAMILY:-MesloLGS NF}\" nsenter -t 1 -m -u -i -n -p su - \"${USERNAME:-root}\"
+      "
+    pid: host
+    privileged: true
+    expose:
+      - 7681
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true
