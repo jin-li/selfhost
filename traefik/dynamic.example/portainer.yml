@@ -1,22 +1,24 @@
 http:
   routers:
-    portainer-router:
+    portainer:
+      rule: "Host(`portainer.example.com`)"
+      entryPoints:
+        - websecure
+      service: portainer-api
+      tls: {}
+    portainer-edge:
+      rule: "Host(`edge.example.com`)"
       entryPoints:
         - websecure
       tls: {}
-      rule: "Host(`portainer.example.com`)"
-      service: portainer-service
-      middlewares:
-        - portainer-headers
+      service: portainer-edge
 
   services:
-    portainer-service:
+    portainer-api:
       loadBalancer:
         servers:
           - url: "http://portainer:9000"
-
-  middlewares:
-    portainer-headers:
-      headers:
-        customRequestHeaders:
-          Origin: ""
+    portainer-edge:
+      loadBalancer:
+        servers:
+          - url: "http://portainer:8000"
