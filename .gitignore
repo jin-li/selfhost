@@ -1,0 +1,8 @@
+*.env
+traefik.yml
+config.yaml
+users.yml
+configuration.yml
+dynamic/
+data/
+.vscode/
