@@ -1,0 +1,49 @@
+version: "3.2"
+
+services:
+  database:
+    container_name: chevereto-free_database
+    image: mariadb:focal
+    networks:
+      - chevereto_network
+    volumes:
+      - ${DATABASE_DIR}/database:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    labels:
+      - wud.watch=false
+
+  chevereto:
+    container_name: chevereto-free_app
+    image: ghcr.io/rodber/chevereto-free:1.6.2
+    networks:
+      - chevereto_network
+      - traefik-net
+    volumes:
+      - ${APP_DIR}/images:/var/www/html/images/
+      - ${APP_DIR}/content:/var/www/html/content/
+      - /etc/localtime:/etc/localtime:ro
+    restart: always
+    environment:
+      TZ: ${TZ}
+      CHEVERETO_TAG: "free"
+      CHEVERETO_DB_HOST: ${CHEVERETO_DB_HOST}
+      CHEVERETO_DB_USER: ${CHEVERETO_DB_USER}
+      CHEVERETO_DB_PASS: ${CHEVERETO_DB_PASS}
+      CHEVERETO_DB_PORT: 3306
+      CHEVERETO_DB_NAME: ${CHEVERETO_DB_NAME}
+      CHEVERETO_DISABLE_UPDATE_HTTP: 1
+      CHEVERETO_DISABLE_UPDATE_CLI: 1
+      CHEVERETO_HTTPS: 0
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
+
+networks:
+  chevereto_network:
+  traefik-net:
+    external: true
