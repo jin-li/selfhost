@@ -10,7 +10,7 @@ services:
       - WUD_AUTH_BASIC_ADMIN_HASH=${WUD_AUTH_BASIC_ADMIN_HASH}
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+-.*$$ => $$1
+      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
     networks:
       - traefik-net
 

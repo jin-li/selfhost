@@ -9,7 +9,7 @@ services:
       - ./data:/data
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^v(\d+\.\d+)\.\d+$$ => $$1
+      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
     networks:
       traefik-net:
         aliases:
