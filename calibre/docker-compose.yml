@@ -1,0 +1,26 @@
+---
+version: "2.1"
+services:
+  calibre-web:
+    image: linuxserver/calibre-web:0.6.24
+    container_name: calibre-web
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${APP_DIR}/data:/config
+      - ${APP_DIR}/library:/books
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    networks:
+      traefik-net:
+        aliases:
+          - calibre-web
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
+
+networks:
+  traefik-net:
+    external: true
