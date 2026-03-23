@@ -1,0 +1,14 @@
+http:
+  routers:
+    calibre-web-router:
+      entryPoints:
+        - websecure
+      tls: {}
+      rule: "Host(`calibre.example.com`)"
+      service: calibre-web-service
+
+  services:
+    calibre-web-service:
+      loadBalancer:
+        servers:
+          - url: "http://calibre-web:8083"

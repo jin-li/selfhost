@@ -1,0 +1,14 @@
+http:
+  routers:
+    chevereto-router:
+      rule: "Host(`image.example.com`)"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: chevereto-service
+
+  services:
+    chevereto-service:
+      loadBalancer:
+        servers:
+          - url: "http://chevereto-free_app:80"

@@ -1,0 +1,15 @@
+http:
+  routers:
+    nextcloud-router:
+      rule: "Host(`cloud.example.com`)"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: nextcloud-service
+
+  services:
+    nextcloud-service:
+      loadBalancer:
+        servers:
+          - url: "http://nextcloud:80"
+        passHostHeader: true
