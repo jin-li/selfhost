@@ -1,0 +1,14 @@
+http:
+  routers:
+    gitlab-router:
+      rule: "Host(`gitlab.example.com`)"
+      entryPoints:
+        - websecure
+      tls: {}
+      service: gitlab-service
+
+  services:
+    gitlab-service:
+      loadBalancer:
+        servers:
+          - url: "http://gitlab:80"

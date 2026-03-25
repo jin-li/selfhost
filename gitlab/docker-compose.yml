@@ -1,0 +1,33 @@
+version: '3.6'
+services:
+  web:
+    image: 'gitlab/gitlab-ee:18.2.0-ee.0'
+    container_name: gitlab
+    restart: always
+    hostname: ${HOST_DOMAIN_NAME}
+    environment:
+      TZ: ${TZ}
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://${HOST_DOMAIN_NAME}'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        gitlab_rails['gitlab_shell_ssh_port'] = 10022
+    ports:
+      - '10022:22'
+    networks:
+      traefik-net:
+        aliases:
+          - gitlab
+    volumes:
+      - '${APP_DIR}/config:/etc/gitlab'
+      - '${APP_DIR}/logs:/var/log/gitlab'
+      - '${APP_DIR}/data:/var/opt/gitlab'
+      - /etc/localtime:/etc/localtime:ro
+    shm_size: '256m'
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d-ee\.\d+$$
+      - wud.tag.transform=^(\d+\.\d+)\.\d-ee\.\d+$$ => $$1
+
+networks:
+  traefik-net:
+    external: true
