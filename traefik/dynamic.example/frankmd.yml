@@ -1,0 +1,16 @@
+http:
+  routers:
+    frankmd-router:
+      entryPoints:
+        - websecure
+      tls: {}
+      rule: Host(`frankmd.example.com`)
+      service: frankmd-service
+      middlewares:
+        - authelia
+
+  services:
+    frankmd-service:
+      loadBalancer:
+        servers:
+          - url: "http://frankmd:80"

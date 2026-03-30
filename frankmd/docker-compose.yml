@@ -1,0 +1,80 @@
+# FrankMD Docker Compose
+#
+# Quick start:
+#   docker compose up -d
+#
+# With custom notes directory:
+#   NOTES_PATH=~/my-notes docker compose up -d
+#
+# Generate secret key (first time only):
+#   echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" >> .env
+#
+# Run as current user (for volume permissions):
+#   echo "UID=$(id -u)" >> .env
+#   echo "GID=$(id -g)" >> .env
+
+services:
+  frankmd:
+    image: akitaonrails/frankmd:latest
+    # Or build locally:
+    # build: .
+    container_name: frankmd
+    restart: unless-stopped
+    # Run as host user for proper volume permissions
+    user: "${UID:-1000}:${GID:-1000}"
+    #ports:
+    #  - "${PORT:-7591}:80"
+    volumes:
+      # Notes directory - default to ./notes, override with NOTES_PATH env var
+      - ${NOTES_PATH:-./notes}:/rails/notes
+      # Images directory (optional) - for local image browsing
+      - ${IMAGES_PATH:-./images}:/rails/images
+    environment:
+      # Required
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-development_secret_key_base_change_in_production}
+      - NOTES_PATH=/rails/notes
+      - IMAGES_PATH=/rails/images
+
+      # Optional: AWS S3 for image uploads
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-}
+      - AWS_REGION=${AWS_REGION:-}
+
+      # Optional: YouTube search
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+
+      # Optional: Google Image search
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_CSE_ID=${GOOGLE_CSE_ID:-}
+
+      # Optional: AI/LLM grammar checking
+      - AI_PROVIDER=${AI_PROVIDER:-}
+      - AI_MODEL=${AI_MODEL:-}
+      - OLLAMA_API_BASE=${OLLAMA_API_BASE:-}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-}
+      - IMAGE_GENERATION_MODEL=${IMAGE_GENERATION_MODEL:-}
+
+      # Optional: Locale (en, pt-BR, pt-PT, es, he, ja, ko)
+      - FRANKMD_LOCALE=${FRANKMD_LOCALE:-}
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true
