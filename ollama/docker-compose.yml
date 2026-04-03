@@ -1,0 +1,31 @@
+services:
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:0.20.0
+    environment:
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_HOST=0.0.0.0
+      - TZ=Europe/Zurich
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: ["gpu"]
+            count: all
+    volumes:
+      - ${OLLAMA_DATA_DIR}:/root/.ollama
+      - ${HUGGINGFACE_DOWNLOAD_DIR}:/root/.huggingface
+      - /usr/bin/curl:/usr/bin/curl
+      - /lib64:/lib64
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true
