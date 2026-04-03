@@ -5,7 +5,7 @@ services:
     environment:
       - OLLAMA_ORIGINS=*
       - OLLAMA_HOST=0.0.0.0
-      - TZ=Europe/Zurich
+      - TZ=${TZ}
     ports:
       - "11434:11434"
     deploy:
