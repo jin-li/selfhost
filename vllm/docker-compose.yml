@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.17.0
+    container_name: vllm
+    restart: unless-stopped
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      - HF_HUB_DISABLE_XET=1
+      - HF_HUB_ENABLE_HF_TRANSFER=0
+      - VLLM_API_KEY=${VLLM_API_KEY:-dummy}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ipc: host
+    command: >
+      ${MODEL}
+      ${MODEL_PARAMETERS}
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.tag.transform=^v(\d+\.\d+)\.\d+$$ => $$1
+    networks:
+      traefik-net:
+        aliases:
+          - vllm
+
+networks:
+  traefik-net:
+    external: true
