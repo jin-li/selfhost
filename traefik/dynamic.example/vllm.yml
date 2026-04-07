@@ -1,0 +1,14 @@
+http:
+  routers:
+    vllm-router:
+      entryPoints:
+        - websecure
+      tls: {}
+      rule: Host(`vllm.example.com`)
+      service: vllm-service
+
+  services:
+    vllm-service:
+      loadBalancer:
+        servers:
+          - url: "http://vllm:8000"
