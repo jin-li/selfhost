@@ -1,0 +1,10 @@
+{
+    "$schema": "https://ddns.newfuture.cc/schema/v4.0.json",
+    "dns": "your_dns_provider",
+    "token": "your_dns_provider_token",
+    "index4": ["url:http://icanhazip.com", "public"],
+    "index6": "public",
+    "ipv4": ["example.com", "name1.example.com", "name2.example.com", "name3.example.com"],
+    "ttl": 300,
+    "proxied": false
+}

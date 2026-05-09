@@ -1,0 +1,11 @@
+version: "3"
+services:
+  ddns:
+    image: newfuture/ddns:v4.0.2
+    container_name: ddns
+    restart: always
+    network_mode: host
+    volumes:
+      - ./config:/ddns
+    labels:
+      - wud.tag.include=^(\d+\.\d+)\.\d+$$ => $$1
