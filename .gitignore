@@ -2,6 +2,7 @@
 docker-compose.override.yml
 traefik.yml
 config.yaml
+config.json
 users.yml
 configuration.yml
 dynamic/
