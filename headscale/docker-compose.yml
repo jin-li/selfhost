@@ -1,0 +1,34 @@
+version: '3.5'
+services:
+  headscale:
+    image: headscale/headscale:v0.26
+    container_name: headscale
+    volumes:
+      - ./headscale/config:/etc/headscale
+      - ${DATA_DIR:-.}/headscale/data:/var/lib/headscale
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=${TZ}
+    networks:
+      - traefik-net
+    command: serve
+    restart: unless-stopped
+    labels:
+      - wud.tag.include=^v\d+\.\d+$$
+  headplane:
+    container_name: headplane
+    image: ghcr.io/tale/headplane:0.6.0
+    restart: unless-stopped
+    volumes:
+      - './headplane/config/config.yaml:/etc/headplane/config.yaml'
+      - './headscale/config/config.yaml:/etc/headscale/config.yaml'
+      - '${DATA_DIR:-.}/headplane/data:/var/lib/headplane'
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    networks:
+      - traefik-net
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+
+networks:
+  traefik-net:
+    external: true

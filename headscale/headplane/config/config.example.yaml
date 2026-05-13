@@ -1,0 +1,48 @@
+server:
+    host: "0.0.0.0"
+    port: 3000
+    cookie_secret: "32-character-long-random-string"
+    cookie_secure: false
+
+headscale:
+    url: "https://<headscale.example.com>"
+    config_path: "/etc/headscale/config.yaml"
+    config_strict: true
+
+integration:
+    docker:
+        enabled: true
+        container_name: "headscale"
+        socket: "unix:///var/run/docker.sock"
+
+oidc:
+  issuer: "https://<authelia.example.com>"
+  client_id: "headplane"
+
+  # The client secret for the OIDC client
+  # Either this or `client_secret_path` must be set for OIDC to work
+  client_secret: "some-random-client-secret"
+  # You can alternatively set `client_secret_path` to read the secret from disk.
+  # The path specified can resolve environment variables, making integration
+  # with systemd's `LoadCredential` straightforward:
+  # client_secret_path: "${CREDENTIALS_DIRECTORY}/oidc_client_secret"
+
+  disable_api_key_login: false
+  token_endpoint_auth_method: "client_secret_post"
+
+  # If you are using OIDC, you need to generate an API key
+  # that can be used to authenticate other sessions when signing in.
+  #
+  # This can be done with `headscale apikeys create --expiration 999d`
+  headscale_api_key: "your-headscale-api-key"
+
+  # Optional, but highly recommended otherwise Headplane
+  # will attempt to automatically guess this from the issuer
+  #
+  # This should point to your publicly accessibly URL
+  # for your Headplane instance with /admin/oidc/callback
+  redirect_uri: 'https://<url-to-your-headplane>/admin/oidc/callback'
+
+  # Stores the users and their permissions for Headplane
+  # This is a path to a JSON file, default is specified below.
+  user_storage_file: "/var/lib/headplane/users.json"
