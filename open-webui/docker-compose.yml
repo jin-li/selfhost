@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:0.8.12
+    image: ghcr.io/open-webui/open-webui:0.9.5
     container_name: open-webui
     volumes:
       - ${DATA_DIR}:/app/backend/data
