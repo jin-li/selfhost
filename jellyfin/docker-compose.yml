@@ -1,0 +1,27 @@
+---
+version: "2.1"
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:10.11.0
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ${APP_DIR}/config:/config
+      - type: bind
+        source: ${MEDIA_DATA_DIR}
+        target: /data/media
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      traefik-net:
+        aliases:
+          - jellyfin
+    restart: unless-stopped
+    labels:
+      - wud.tag.include=^(\d+\.\d+)\.\d+$$ => $$1
+
+networks:
+  traefik-net:
+    external: true
