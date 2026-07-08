@@ -13,6 +13,17 @@ api:
   dashboard: true
   insecure: false
 
+certificatesResolvers:
+  le:
+    acme:
+      email: xxx@your.email
+      storage: /letsencrypt/acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
 # Optional: Uncomment the following lines to enable debug logging
 #log:
 #  level: "DEBUG"
