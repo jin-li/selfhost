@@ -1,0 +1,32 @@
+http:
+  routers:
+    immich-router-http:
+      rule: "Host(`immich.example.com`)"
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-https
+      service: immich-service
+
+    immich-router-https:
+      rule: "Host(`immich.example.com`)"
+      entryPoints:
+        - websecure
+      tls: 
+        certResolver: le
+      service: immich-service
+
+  services:
+    immich-service:
+      loadBalancer:
+        servers:
+          - url: "http://immich:2283"
+        passHostHeader: true
+        healthCheck:
+          interval: 10s
+
+  middlewares:
+    redirect-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
