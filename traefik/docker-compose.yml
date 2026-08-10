@@ -6,15 +6,9 @@ services:
     container_name: traefik
     command:
       - "--configFile=/etc/traefik/traefik.yml"
-      - "--entryPoints.web.address=:80"
-      - "--entryPoints.websecure.address=:443"
       - "--providers.docker=true"
       - "--providers.docker.network=traefik-net"
       - "--providers.docker.exposedByDefault=false"
-      - "--providers.file.directory=/etc/traefik/dynamic"
-      - "--providers.file.watch=true"
-      - "--api.dashboard=true"
-      - "--log.level=INFO"
     ports:
       - "80:80"
       - "443:443"
@@ -23,7 +17,10 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./traefik.yml:/etc/traefik/traefik.yml:ro"
       - "./dynamic:/etc/traefik/dynamic:ro"
+      - "./acme.json:/letsencrypt/acme.json"
     environment:
+      - ACME_EMAIL=${ACME_EMAIL}
+      - TRAEFIK_CERTIFICATESRESOLVERS_LE_ACME_EMAIL=${ACME_EMAIL}
       - CF_API_KEY=${CF_API_KEY}
       - CF_API_EMAIL=${CF_API_EMAIL}
       - TZ=${TZ:-UTC}

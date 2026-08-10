@@ -3,6 +3,10 @@ entryPoints:
     address: ":80"
   websecure:
     address: ":443"
+    transport:
+      respondingTimeouts:
+        readTimeout: 600s
+        idleTimeout: 600s
 
 providers:
   file:
@@ -16,7 +20,6 @@ api:
 certificatesResolvers:
   le:
     acme:
-      email: xxx@your.email
       storage: /letsencrypt/acme.json
       dnsChallenge:
         provider: cloudflare
