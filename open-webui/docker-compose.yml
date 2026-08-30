@@ -7,9 +7,9 @@ services:
     volumes:
       - ${DATA_DIR}:/app/backend/data
     environment:
-      - OPENAI_API_BASE_URL=http://vllm:8000/v1
-      - OPENAI_API_KEY=${VLLM_API_KEY:-dummy}
       - TZ=${TZ:-UTC}
+      - ENABLE_OLLAMA_API=false
+      - ENABLE_OPENAI_API=false
     restart: unless-stopped
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
