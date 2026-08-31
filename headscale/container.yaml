@@ -1,0 +1,63 @@
+schema: 1
+service: headscale
+projectName: headscale
+compose:
+  root: selfhost/headscale
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/headscale/compose.{host}.yaml
+environment:
+  DATA_DIR:
+    source: host.services.headscale.dataPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files:
+  headscaleConfig:
+    source:
+      scope: service
+      path: files/headscale-config.yaml
+      format: text
+    target: headscale-config.yaml
+    secret: true
+    required: true
+    mode: "0600"
+  headplaneConfig:
+    source:
+      scope: service
+      path: files/headplane-config.yaml
+      format: text
+    target: headplane-config.yaml
+    secret: true
+    required: true
+    mode: "0600"
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: headscale-data
+      source: host.services.headscale.dataPath
+      containerPath: /var/lib/headscale
+      backupNotes: Stop Headscale before copying its bind-mounted data directory containing SQLite database and noise key.
+    - name: headplane-data
+      source: host.services.headscale.dataPath
+      containerPath: /var/lib/headplane
+      backupNotes: Headplane user storage.
+validation:
+  healthChecks:
+    - name: headscale-health
+      command: ["wget", "-q", "--spider", "http://localhost:8080/health"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/headscale/.env
+  - selfhost/headscale/headscale/config/config.yaml
+  - selfhost/headscale/headplane/config/config.yaml
