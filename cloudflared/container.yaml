@@ -7,11 +7,6 @@ compose:
     - docker-compose.yml
   hostOverlay: local/{host}/cloudflared/compose.{host}.yaml
 environment:
-  CERT_FILE:
-    source: runtime.files.cert
-    required: true
-    type: string
-    secret: false
   CRED_FILE:
     source: runtime.files.credentials
     required: true
@@ -28,15 +23,6 @@ environment:
     type: string
     secret: false
 files:
-  cert:
-    source:
-      scope: host-service
-      path: files/cert.pem
-      format: text
-    target: cert.pem
-    secret: true
-    required: true
-    mode: "0400"
   credentials:
     source:
       scope: host-service
@@ -45,7 +31,10 @@ files:
     target: credentials.json
     secret: true
     required: true
-    mode: "0400"
+    # The container runs as UID 65532. The enclosing runtime directory is
+    # host-private (0700), while the bind-mounted file must be readable by
+    # that non-root container identity.
+    mode: "0444"
 networks:
   required:
     - traefik-net
