@@ -1,0 +1,63 @@
+schema: 1
+service: traefik
+projectName: traefik
+compose:
+  root: selfhost/traefik
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/traefik/compose.{host}.yaml
+environment:
+  ACME_EMAIL:
+    source: global.acmeEmail
+    required: true
+    type: string
+    secret: false
+  ACME_PATH:
+    source: host.services.traefik.acmePath
+    required: true
+    type: string
+    secret: false
+  CF_API_KEY:
+    source:
+      scope: host-service
+      path: env.yaml
+      key: CF_API_KEY
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  CF_API_EMAIL:
+    source:
+      scope: host-service
+      path: env.yaml
+      key: CF_API_EMAIL
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: acme-state
+      source: host.services.traefik.acmePath
+      containerPath: /letsencrypt/acme.json
+      backupNotes: Stop Traefik before copying ACME account and certificate state.
+validation:
+  healthChecks:
+    - name: traefik-version
+      command: ["traefik", "version"]
+placement:
+  allowedHosts: [surf, t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/traefik/.env
+  - local/t460s/traefik/dynamic/traefik-dashboard-auth.generated.yml

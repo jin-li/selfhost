@@ -1,0 +1,43 @@
+schema: 1
+service: wud
+projectName: wud
+compose:
+  root: selfhost/wud
+  base:
+    - docker-compose.yml
+  hostOverlay: null
+environment:
+  WUD_AUTH_BASIC_ADMIN_USER:
+    source:
+      scope: service
+      path: env.yaml
+      key: WUD_AUTH_BASIC_ADMIN_USER
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  WUD_AUTH_BASIC_ADMIN_HASH:
+    source:
+      scope: service
+      path: env.yaml
+      key: WUD_AUTH_BASIC_ADMIN_HASH
+      format: yaml
+    required: true
+    type: string
+    secret: true
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations: []
+validation:
+  healthChecks:
+    - name: wud-runtime
+      command: ["node", "--version"]
+placement:
+  allowedHosts: [surf, t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/wud/.env

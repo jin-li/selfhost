@@ -1,0 +1,67 @@
+schema: 1
+service: cloudflared
+projectName: cloudflared
+compose:
+  root: selfhost/cloudflared
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/cloudflared/compose.{host}.yaml
+environment:
+  CERT_FILE:
+    source: runtime.files.cert
+    required: true
+    type: string
+    secret: false
+  CRED_FILE:
+    source: runtime.files.credentials
+    required: true
+    type: string
+    secret: false
+  TUNNEL_NAME:
+    source: host.services.cloudflared.tunnelName
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files:
+  cert:
+    source:
+      scope: host-service
+      path: files/cert.pem
+      format: text
+    target: cert.pem
+    secret: true
+    required: true
+    mode: "0400"
+  credentials:
+    source:
+      scope: host-service
+      path: files/credentials.json
+      format: text
+    target: credentials.json
+    secret: true
+    required: true
+    mode: "0400"
+networks:
+  required:
+    - traefik-net
+data:
+  declarations: []
+validation:
+  healthChecks:
+    - name: cloudflared-version
+      command: ["cloudflared", "--version"]
+placement:
+  allowedHosts: [surf, t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/cloudflared/.env
+  - selfhost/cloudflared/data/cert.pem
+  - selfhost/cloudflared/data/credentials.json
+  - /home/lijin/.config/cloudflared/cert.pem
+  - /home/lijin/.config/cloudflared/7ef89d90-4a93-4103-bbd1-1a992ca49767.json
