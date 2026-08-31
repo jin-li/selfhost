@@ -6,7 +6,12 @@ compose:
   base:
     - docker-compose.yml
   hostOverlay: local/{host}/portainer/compose.{host}.yaml
-environment: {}
+environment:
+  PORTAINER_DATA_PATH:
+    source: host.services.portainer.dataPath
+    required: true
+    type: string
+    secret: false
 files: {}
 networks:
   required:
