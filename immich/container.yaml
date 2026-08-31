@@ -1,0 +1,80 @@
+schema: 1
+service: immich
+projectName: immich
+compose:
+  root: selfhost/immich
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/immich/compose.{host}.yaml
+environment:
+  UPLOAD_LOCATION:
+    source: host.services.immich.libraryPath
+    required: true
+    type: string
+    secret: false
+  DB_DATA_LOCATION:
+    source: host.services.immich.postgresPath
+    required: true
+    type: string
+    secret: false
+  IMMICH_VERSION:
+    source:
+      scope: service
+      path: env.yaml
+      key: IMMICH_VERSION
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  DB_PASSWORD:
+    source:
+      scope: service
+      path: env.yaml
+      key: DB_PASSWORD
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  DB_USERNAME:
+    source:
+      scope: service
+      path: env.yaml
+      key: DB_USERNAME
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  DB_DATABASE_NAME:
+    source:
+      scope: service
+      path: env.yaml
+      key: DB_DATABASE_NAME
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  NGINX_CLIENT_MAX_BODY_SIZE:
+    source:
+      scope: service
+      path: env.yaml
+      key: NGINX_CLIENT_MAX_BODY_SIZE
+      format: yaml
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations: []
+validation:
+  healthChecks:
+    - name: immich-health
+      command: ["curl", "-f", "http://localhost:2283/api/server/ping"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/immich/.env
