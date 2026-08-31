@@ -17,97 +17,25 @@ environment:
     required: true
     type: string
     secret: false
-  STORAGE_ENCRYPTION_KEY:
-    source:
-      scope: service
-      path: env.yaml
-      key: STORAGE_ENCRYPTION_KEY
-      format: yaml
-    required: true
-    type: string
-    secret: true
-  SESSION_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: SESSION_SECRET
-      format: yaml
-    required: false
-    type: string
-    secret: true
-  JWT_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: JWT_SECRET
-      format: yaml
-    required: true
-    type: string
-    secret: true
-  HMAC_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: HMAC_SECRET
-      format: yaml
-    required: true
-    type: string
-    secret: true
-  HEADPLANE_CLIENT_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: HEADPLANE_CLIENT_SECRET
-      format: yaml
-    required: true
-    type: string
-    secret: true
-  HEADSCALE_CLIENT_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: HEADSCALE_CLIENT_SECRET
-      format: yaml
-    required: true
-    type: string
-    secret: true
-  FRANKMD_CLIENT_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: FRANKMD_CLIENT_SECRET
-      format: yaml
-    required: true
-    type: string
-    secret: true
-  JINLI_HOME_CLIENT_SECRET:
-    source:
-      scope: service
-      path: env.yaml
-      key: JINLI_HOME_CLIENT_SECRET
-      format: yaml
-    required: true
-    type: string
-    secret: true
 files:
-  jwksKey:
+  configuration:
     source:
       scope: service
-      path: files/jwks.key
-      format: binary
-    target: jwks.key
+      path: files/configuration.yml
+      format: text
+    target: configuration.yml
     secret: true
     required: true
-    mode: "0400"
+    mode: "0600"
   users:
     source:
       scope: service
       path: files/users.yml
-      format: binary
+      format: text
     target: users.yml
     secret: true
     required: true
-    mode: "0400"
+    mode: "0600"
 networks:
   required:
     - traefik-net
