@@ -1,0 +1,53 @@
+schema: 1
+service: frankmd
+projectName: frankmd
+compose:
+  root: selfhost/frankmd
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/frankmd/compose.{host}.yaml
+environment:
+  NOTES_PATH_HOST:
+    source: host.services.frankmd.notesPath
+    required: true
+    type: string
+    secret: false
+  IMAGES_PATH_HOST:
+    source: host.services.frankmd.imagesPath
+    required: true
+    type: string
+    secret: false
+  SECRET_KEY_BASE:
+    source:
+      scope: host-service
+      path: env.yaml
+      key: SECRET_KEY_BASE
+      format: yaml
+    required: true
+    type: string
+    secret: true
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: frankmd-notes
+      source: host.services.frankmd.notesPath
+      containerPath: /rails/notes
+      backupNotes: Stop FrankMD before copying its notes directory to avoid capturing a live write.
+    - name: frankmd-images
+      source: host.services.frankmd.imagesPath
+      containerPath: /rails/images
+      backupNotes: Stop FrankMD before copying its images directory to avoid capturing a live write.
+validation:
+  healthChecks:
+    - name: frankmd-health
+      command: ["curl", "--silent", "--fail", "http://localhost:80/up"]
+placement:
+  allowedHosts:
+    - t460s
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/frankmd/.env
