@@ -63,6 +63,8 @@ environment:
     required: true
     type: string
     secret: false
+files: {}
+
 networks:
   required:
     - traefik-net
@@ -71,12 +73,10 @@ data:
     - name: nextcloud-app
       source: host.services.nextcloud.dataPath
       containerPath: /var/www/html
-      subpath: app
       backupNotes: Stop Nextcloud before copying its bind-mounted application directory.
     - name: nextcloud-db
       source: host.services.nextcloud.dataPath
       containerPath: /var/lib/mysql
-      subpath: db
       backupNotes: Stop MariaDB before copying its bind-mounted database directory.
 validation:
   healthChecks: []
