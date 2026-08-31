@@ -17,6 +17,11 @@ environment:
     required: true
     type: string
     secret: false
+  DASHBOARD_AUTH_FILE:
+    source: runtime.files.dashboardAuth
+    required: true
+    type: string
+    secret: false
   CF_API_KEY:
     source:
       scope: host-service
@@ -40,7 +45,16 @@ environment:
     required: true
     type: string
     secret: false
-files: {}
+files:
+  dashboardAuth:
+    source:
+      scope: host-service
+      path: files/traefik-dashboard-auth.generated.yml
+      format: text
+    target: dashboard-auth/traefik-dashboard-auth.generated.yml
+    secret: true
+    required: true
+    mode: "0444"
 networks:
   required:
     - traefik-net
