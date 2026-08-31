@@ -1,0 +1,59 @@
+schema: 1
+service: authelia
+projectName: authelia
+compose:
+  root: selfhost/authelia
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/authelia/compose.{host}.yaml
+environment:
+  DATA_DIR:
+    source: host.services.authelia.dataPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files:
+  configuration:
+    source:
+      scope: service
+      path: files/configuration.yml
+      format: text
+    target: configuration.yml
+    secret: true
+    required: true
+    mode: "0600"
+  users:
+    source:
+      scope: service
+      path: files/users.yml
+      format: text
+    target: users.yml
+    secret: true
+    required: true
+    mode: "0600"
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: authelia-data
+      source: host.services.authelia.dataPath
+      containerPath: /data
+      backupNotes: Stop Authelia before copying its bind-mounted data directory containing SQLite database and logs.
+validation:
+  healthChecks:
+    - name: authelia-health
+      command: ["wget", "-q", "--spider", "http://localhost:9091/api/health"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/authelia/.env
+  - selfhost/authelia/config/configuration.yml
+  - selfhost/authelia/config/users.yml
