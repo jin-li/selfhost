@@ -1,0 +1,53 @@
+schema: 1
+service: searxng
+projectName: searxng
+compose:
+  root: selfhost/searxng
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/searxng/compose.{host}.yaml
+environment:
+  CACHE_PATH:
+    source: host.services.searxng.cachePath
+    required: true
+    type: string
+    secret: false
+  SEARXNG_HOSTNAME:
+    source: host.services.searxng.hostname
+    required: true
+    type: string
+    secret: false
+  SETTINGS_FILE:
+    source: runtime.files.settings
+    required: true
+    type: string
+    secret: false
+files:
+  settings:
+    source:
+      scope: host-service
+      path: files/settings.yml
+      format: text
+    target: settings.yml
+    secret: true
+    required: true
+    mode: "0400"
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: cache
+      source: host.services.searxng.cachePath
+      containerPath: /var/cache/searxng
+      backupNotes: Cache is rebuildable; stop SearXNG only when taking a reproducible optional copy.
+validation:
+  healthChecks:
+    - name: python-version
+      command: ["python", "--version"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/searxng/searxng/settings.yml
