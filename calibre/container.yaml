@@ -1,0 +1,47 @@
+schema: 1
+service: calibre
+projectName: calibre
+compose:
+  root: selfhost/calibre
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/calibre/compose.{host}.yaml
+environment:
+  DATA_DIR:
+    source: host.services.calibre.dataPath
+    required: true
+    type: string
+    secret: false
+  LIBRARY_DIR:
+    source: host.services.calibre.libraryPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: calibre-config
+      source: host.services.calibre.dataPath
+      containerPath: /config
+      backupNotes: Stop Calibre-Web before copying its configuration database, log files, and any Google Drive integration credentials under /config.
+    - name: calibre-library
+      source: host.services.calibre.libraryPath
+      containerPath: /books
+      backupNotes: Stop Calibre-Web before copying the book library to keep its metadata consistent with the configuration database.
+validation:
+  healthChecks:
+    - name: calibre-web-health
+      command: ["curl", "--silent", "--fail", "http://localhost:8083/"]
+placement:
+  allowedHosts:
+    - t460s
+  mode: singleton
+autostart: false

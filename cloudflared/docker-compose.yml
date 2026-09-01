@@ -9,7 +9,6 @@ services:
       - TZ=${TZ:-UTC}
     volumes:
       - ./config.yaml:/etc/cloudflared/config.yaml
-      - ${CERT_FILE}:/etc/cloudflared/cert.pem
       - ${CRED_FILE}:/etc/cloudflared/creds/credentials.json
     restart: always
     labels:

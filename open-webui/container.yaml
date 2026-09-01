@@ -1,0 +1,39 @@
+schema: 1
+service: open-webui
+projectName: open-webui
+compose:
+  root: selfhost/open-webui
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/open-webui/compose.{host}.yaml
+environment:
+  DATA_DIR:
+    source: host.services.open-webui.dataPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: open-webui-data
+      source: host.services.open-webui.dataPath
+      containerPath: /app/backend/data
+      backupNotes: Stop Open WebUI before copying its complete bind-mounted state, including SQLite, uploads, and vector data.
+validation:
+  healthChecks:
+    - name: open-webui-health
+      command: ["curl", "--silent", "--fail", "http://localhost:8080/health"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/open-webui/.env

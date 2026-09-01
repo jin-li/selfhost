@@ -1,0 +1,24 @@
+schema: 1
+service: invest
+projectName: invest
+compose:
+  root: private/invest
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/invest/compose.{host}.yaml
+environment: {}
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations: []
+validation:
+  healthChecks:
+    - name: nginx-config
+      command: ["nginx", "-t"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths: []

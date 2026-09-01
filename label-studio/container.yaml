@@ -1,0 +1,75 @@
+schema: 1
+service: label-studio
+projectName: label-studio
+compose:
+  root: selfhost/label-studio
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/label-studio/compose.{host}.yaml
+environment:
+  APP_DATA:
+    source: host.services.label-studio.appDataPath
+    required: true
+    type: string
+    secret: false
+  DB_DATA:
+    source: host.services.label-studio.dbDataPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+  CSRF_TRUSTED_ORIGINS:
+    source: host.services.label-studio.csrfTrustedOrigins
+    required: true
+    type: string
+    secret: false
+  DJANGO_ALLOWED_HOSTS:
+    source: host.services.label-studio.djangoAllowedHosts
+    required: true
+    type: string
+    secret: false
+  POSTGRES_USERNAME:
+    source: host.services.label-studio.postgresUsername
+    required: true
+    type: string
+    secret: false
+  POSTGRES_PASSWORD:
+    source:
+      scope: service
+      path: env.yaml
+      key: POSTGRES_PASSWORD
+      format: yaml
+    required: true
+    type: string
+    secret: true
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: label-studio-appdata
+      source: host.services.label-studio.appDataPath
+      containerPath: /label-studio/data
+      backupNotes: Stop Label Studio before archiving its complete application-data bind.
+    - name: label-studio-postgres
+      source: host.services.label-studio.dbDataPath
+      containerPath: /var/lib/postgresql/data
+      backupNotes: Use a consistent logical pg_dump for migration and restore validation; retain the stopped bind as rollback state.
+validation:
+  healthChecks:
+    - name: label-studio-http
+      command: ["curl", "--silent", "--fail", "http://localhost:8000/health"]
+    - name: postgres-ready
+      command: ["pg_isready", "-U", "postgres", "-d", "postgres"]
+placement:
+  allowedHosts:
+    - t460s
+  mode: singleton
+autostart: false
+compatibilityPaths:
+  - selfhost/label-studio/.env

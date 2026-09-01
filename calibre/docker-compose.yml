@@ -9,8 +9,8 @@ services:
       - PGID=1000
       - TZ=${TZ}
     volumes:
-      - ${APP_DIR}/data:/config
-      - ${APP_DIR}/library:/books
+      - ${DATA_DIR}:/config
+      - ${LIBRARY_DIR}:/books
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
     networks:

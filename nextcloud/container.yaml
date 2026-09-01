@@ -1,0 +1,88 @@
+schema: 1
+service: nextcloud
+projectName: nextcloud
+compose:
+  root: selfhost/nextcloud
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/nextcloud/compose.{host}.yaml
+environment:
+  APP_DIR:
+    source: host.services.nextcloud.dataPath
+    required: true
+    type: string
+    secret: false
+  DATABASE_DIR:
+    source: host.services.nextcloud.dataPath
+    required: true
+    type: string
+    secret: false
+  MYSQL_ROOT_PASSWORD:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_ROOT_PASSWORD
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  MYSQL_PASSWORD:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_PASSWORD
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  MYSQL_DATABASE:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_DATABASE
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  MYSQL_USER:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_USER
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  NEXTCLOUD_TRUSTED_DOMAINS:
+    source: host.services.nextcloud.trustedDomains
+    required: true
+    type: string
+    secret: false
+  VIRTUAL_HOST:
+    source: host.services.nextcloud.virtualHost
+    required: true
+    type: string
+    secret: false
+files: {}
+
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: nextcloud-app
+      source: host.services.nextcloud.dataPath
+      containerPath: /var/www/html
+      backupNotes: Stop Nextcloud before copying its bind-mounted application directory.
+    - name: nextcloud-db
+      source: host.services.nextcloud.dataPath
+      containerPath: /var/lib/mysql
+      backupNotes: Stop MariaDB before copying its bind-mounted database directory.
+validation:
+  healthChecks: []
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/nextcloud/.env

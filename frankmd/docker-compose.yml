@@ -25,10 +25,10 @@ services:
     #ports:
     #  - "${PORT:-7591}:80"
     volumes:
-      # Notes directory - default to ./notes, override with NOTES_PATH env var
-      - ${NOTES_PATH:-./notes}:/rails/notes
+      # Notes directory - default to ./notes, override with NOTES_PATH_HOST env var
+      - ${NOTES_PATH_HOST:-./notes}:/rails/notes
       # Images directory (optional) - for local image browsing
-      - ${IMAGES_PATH:-./images}:/rails/images
+      - ${IMAGES_PATH_HOST:-./images}:/rails/images
     environment:
       # Required
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-development_secret_key_base_change_in_production}

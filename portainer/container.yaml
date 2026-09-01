@@ -1,0 +1,33 @@
+schema: 1
+service: portainer
+projectName: portainer
+compose:
+  root: selfhost/portainer
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/portainer/compose.{host}.yaml
+environment:
+  PORTAINER_DATA_PATH:
+    source: host.services.portainer.dataPath
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: portainer-data
+      source: host.services.portainer.dataPath
+      containerPath: /data
+      backupNotes: Stop Portainer before copying its complete bind-mounted state.
+validation:
+  healthChecks:
+    - name: portainer-version
+      command: ["/portainer", "--version"]
+placement:
+  allowedHosts: [surf, t460s]
+  mode: singleton
+autostart: false
+compatibilityPaths: []
