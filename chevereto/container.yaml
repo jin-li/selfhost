@@ -1,0 +1,119 @@
+schema: 1
+service: chevereto
+projectName: chevereto
+compose:
+  root: selfhost/chevereto
+  base:
+    - docker-compose.yml
+  hostOverlay: local/{host}/chevereto/compose.{host}.yaml
+environment:
+  DATABASE_DIR:
+    source: host.services.chevereto.databasePath
+    required: true
+    type: string
+    secret: false
+  APP_DIR:
+    source: host.services.chevereto.appPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+  CHEVERETO_DB_HOST:
+    source:
+      scope: service
+      path: env.yaml
+      key: CHEVERETO_DB_HOST
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  CHEVERETO_DB_PORT:
+    source:
+      scope: service
+      path: env.yaml
+      key: CHEVERETO_DB_PORT
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  CHEVERETO_DB_USER:
+    source:
+      scope: service
+      path: env.yaml
+      key: CHEVERETO_DB_USER
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  CHEVERETO_DB_PASS:
+    source:
+      scope: service
+      path: env.yaml
+      key: CHEVERETO_DB_PASS
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  CHEVERETO_DB_NAME:
+    source:
+      scope: service
+      path: env.yaml
+      key: CHEVERETO_DB_NAME
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  MYSQL_ROOT_PASSWORD:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_ROOT_PASSWORD
+      format: yaml
+    required: true
+    type: string
+    secret: true
+  MYSQL_DATABASE:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_DATABASE
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  MYSQL_USER:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_USER
+      format: yaml
+    required: true
+    type: string
+    secret: false
+  MYSQL_PASSWORD:
+    source:
+      scope: service
+      path: env.yaml
+      key: MYSQL_PASSWORD
+      format: yaml
+    required: true
+    type: string
+    secret: true
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations: []
+validation:
+  healthChecks:
+    - name: chevereto-health
+      command: ["curl", "-f", "http://localhost:80/"]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: false
