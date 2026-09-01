@@ -25,7 +25,7 @@ environment:
 files:
   settings:
     source:
-      scope: host-service
+      scope: service
       path: files/settings.yml
       format: text
       sopsFormat: binary

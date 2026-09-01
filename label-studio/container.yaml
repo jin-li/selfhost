@@ -39,7 +39,7 @@ environment:
     secret: false
   POSTGRES_PASSWORD:
     source:
-      scope: host-service
+      scope: service
       path: env.yaml
       key: POSTGRES_PASSWORD
       format: yaml
