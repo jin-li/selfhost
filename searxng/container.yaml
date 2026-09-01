@@ -27,8 +27,8 @@ files:
     source:
       scope: service
       path: settings.yml
-      format: text
-      sopsFormat: binary
+      format: yaml
+      key: data
     target: settings.yml
     secret: true
     required: true
