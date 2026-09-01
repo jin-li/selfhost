@@ -17,6 +17,16 @@ environment:
     required: true
     type: string
     secret: false
+  CONFIGURATION_FILE:
+    source: runtime.files.configuration
+    required: true
+    type: string
+    secret: false
+  USERS_FILE:
+    source: runtime.files.users
+    required: true
+    type: string
+    secret: false
 files:
   configuration:
     source:
