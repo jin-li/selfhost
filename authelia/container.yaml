@@ -5,7 +5,7 @@ compose:
   root: selfhost/authelia
   base:
     - docker-compose.yml
-  hostOverlay: null
+  hostOverlay: local/{host}/authelia/compose.{host}.yaml
 environment:
   DATA_DIR:
     source: host.services.authelia.dataPath
