@@ -1,0 +1,50 @@
+schema: 1
+service: jellyfin
+projectName: jellyfin
+compose:
+  root: selfhost/jellyfin
+  base:
+    - docker-compose.yml
+environment:
+  APP_DIR:
+    source: host.services.jellyfin.appDir
+    required: true
+    type: string
+    secret: false
+  MEDIA_DATA_DIR:
+    source: host.services.jellyfin.mediaDataDir
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: jellyfin-config
+      source: host.services.jellyfin.appDir
+      containerPath: /config
+      backupNotes: Stop Jellyfin before copying its configuration directory.
+    - name: jellyfin-media
+      source: host.services.jellyfin.mediaDataDir
+      containerPath: /data/media
+      backupNotes: Media files; can be copied while Jellyfin is running but index may be stale.
+validation:
+  healthChecks:
+    - name: jellyfin-health
+      http:
+        url: http://localhost:8096/System/Health
+        expectedStatuses: [200]
+placement:
+  allowedHosts:
+    - t460s
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/jellyfin/.env
