@@ -36,7 +36,7 @@ validation:
     - name: wud-runtime
       command: ["node", "--version"]
 placement:
-  allowedHosts: [surf, t460s]
+  allowedHosts: [halo, surf, t460s]
   mode: singleton
 autostart: false
 compatibilityPaths:
