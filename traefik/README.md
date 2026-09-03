@@ -4,6 +4,16 @@
 
 Traefik is a modern reverse proxy and load balancer that makes deploying microservices easy. It automatically discovers services and routes traffic to them based on configuration.
 
+## Managed deployment
+
+On hosts driven by `containerctl`, the ACME email, ACME state path, Cloudflare
+API credentials, and dashboard authentication file are rendered into the
+runtime tree from host inventory values and encrypted sources. Per-host routes
+are committed as files under `local/<host>/traefik/dynamic/` in the companion
+`containers` repository; because every route file is read by one file provider,
+router, middleware, and service names must be globally unique. The manual steps
+below apply to unmanaged hosts only.
+
 ## Usage
 
 0. Create `.env` file based on the provided templates.

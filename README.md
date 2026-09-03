@@ -1,32 +1,66 @@
 # Self-hosted Docker Apps
 
-This repository contains Docker Compose files for various self-hosted applications. Each application has its own directory with a `docker-compose.yml` file and any necessary configuration files.
+This repository contains portable Docker Compose stacks for self-hosted
+applications. Each application has its own directory with a
+`docker-compose.yml` base file, any example configuration it needs, and — where
+the stack is deployment-managed — a `container.yaml` service manifest.
 
-This project uses Cloudflare Tunnel and Traefik. With a domain name, you can easily access these applications from anywhere without exposing your home network for free.
+The stacks use Cloudflare Tunnel and Traefik. With a domain name hosted on
+Cloudflare you can reach these applications from anywhere without exposing your
+home network.
 
-## Pre-requisites
+## Directory layout
 
-- Docker and Docker Compose installed on your server.
-- A domain name
-- Cloudflare account
+```text
+<service>/
+├── container.yaml        # service manifest (schema 1), where present
+├── docker-compose.yml    # portable Compose base
+└── config.example.*      # configuration templates (no real values)
+```
 
-## Usage
+Only templates and examples are committed. Generated configuration, `.env`
+files, credentials, and application data stay out of the repository (see
+`.gitignore`).
 
-0. **Preparation**:
+## Service manifests
 
-    a. Make Docker run in rootless mode to avoid permission issues. Refer to the [Docker documentation](https://docs.docker.com/engine/security/rootless/) for instructions.
-    b. Use Cloudflare to host your domain name.
+A `container.yaml` manifest (schema 1) declares everything a deployment
+renderer needs: Compose base files and optional host overlay, environment
+variables and their sources, generated files with modes, required networks,
+persistent-data declarations with backup notes, health checks, allowed hosts
+and placement mode, and legacy compatibility paths. See the
+[manifest reference](docs/container-manifest.md) for the full format.
 
-1. **Clone the repository**:
+On managed hosts, `containerctl` (shipped with the private `nixos-config`
+repository) resolves each manifest against the host inventory and SOPS-
+encrypted sources, renders environment and files into a private runtime tree
+that is recreated at boot, and runs Compose from the companion `containers`
+repository: base file(s) from this repo plus the per-host overlay, with the
+rendered values mounted in. Manifests never contain credentials; secret values
+are referenced by scope and path and resolved at render time.
+
+## Manual usage (unmanaged hosts)
+
+For hosts not driven by `containerctl`, deploy a stack directly:
+
+1. **Preparation**: run Docker in rootless mode if your distro supports it
+   ([Docker documentation](https://docs.docker.com/engine/security/rootless/))
+   and host your domain on Cloudflare.
+
+2. **Clone the repository**:
 
    ```bash
    git clone https://github.com/jin-li/selfhost.git
    ```
 
-2. **Set up reverse proxy**:
+3. **Create configuration** from the `*.example` templates in the service
+   directory (environment file, tunnel credentials, routes).
 
-   a. Cloudflare Tunnel
-   b. Traefik
-   
-   We use a middleware to add the `X-Forwarded-Proto: https` header to ensure that applications behind Traefik can correctly identify the original request protocol.
+4. **Set up the reverse proxy**:
 
+   a. Cloudflare Tunnel — ingress routes for the services you expose.
+   b. Traefik — dynamic route files; a shared middleware adds the
+      `X-Forwarded-Proto: https` header so applications behind Traefik see the
+      original request protocol.
+
+5. **Deploy** with `docker compose up -d`.

@@ -4,6 +4,14 @@
 
 cloudflared is a command-line tool that allows you to run a Cloudflare tunnel locally, enabling you to expose your local development environment to the internet through Cloudflare's network.
 
+## Managed deployment
+
+On hosts driven by `containerctl`, the tunnel name comes from the host
+inventory and the credentials file is rendered into the runtime tree from an
+encrypted source; per-host ingress routes live in the companion `containers`
+repository at `local/<host>/cloudflared/config.yaml`. The manual steps below
+apply to unmanaged hosts only.
+
 ## Usage
 
 0. Create a Tunnel in the Cloudflare dashboard and download the credentials file.
