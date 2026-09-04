@@ -27,7 +27,7 @@ validation:
     - name: portainer-version
       command: ["/portainer", "--version"]
 placement:
-  allowedHosts: [halo, surf, t460s]
+  allowedHosts: [550w, halo, surf, t460s]
   mode: singleton
 autostart: false
 compatibilityPaths: []
