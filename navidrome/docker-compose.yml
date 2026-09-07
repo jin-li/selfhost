@@ -1,0 +1,32 @@
+services:
+  navidrome:
+    image: deluan/navidrome:0.63.2
+    container_name: navidrome
+    user: "1000:100"
+    environment:
+      ND_DATAFOLDER: /data
+      ND_LOGLEVEL: info
+      ND_MUSICFOLDER: /music
+      ND_SCANSCHEDULE: 1h
+      ND_SESSIONTIMEOUT: 24h
+      TZ: ${TZ}
+    volumes:
+      - type: bind
+        source: ${DATA_DIR}
+        target: /data
+      - type: bind
+        source: ${MUSIC_DIR}
+        target: /music
+        read_only: true
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      traefik-net:
+        aliases:
+          - navidrome
+    restart: unless-stopped
+    labels:
+      - wud.tag.include=^(\d+\.\d+)\.\d+$$ => $$1
+
+networks:
+  traefik-net:
+    external: true

@@ -1,0 +1,50 @@
+schema: 1
+service: navidrome
+projectName: navidrome
+compose:
+  root: selfhost/navidrome
+  base:
+    - docker-compose.yml
+environment:
+  DATA_DIR:
+    source: host.services.navidrome.dataPath
+    required: true
+    type: string
+    secret: false
+  MUSIC_DIR:
+    source: host.services.navidrome.musicPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: navidrome-data
+      source: host.services.navidrome.dataPath
+      containerPath: /data
+      backupNotes: Stop Navidrome before copying its SQLite database and cache.
+    - name: navidrome-music
+      source: host.services.navidrome.musicPath
+      containerPath: /music
+      backupNotes: Shared Jellyfin music library mounted read-only; the existing jellyfin top-level replication declaration remains authoritative.
+validation:
+  healthChecks:
+    - name: navidrome-health
+      http:
+        url: http://localhost:4533/ping
+        expectedStatuses: [200]
+placement:
+  allowedHosts:
+    - t460s
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/navidrome/.env
