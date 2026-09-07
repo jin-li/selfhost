@@ -1,0 +1,51 @@
+schema: 1
+service: picard
+projectName: picard
+compose:
+  root: selfhost/picard
+  base: [docker-compose.yml]
+environment:
+  CONFIG_DIR:
+    source: host.services.picard.configPath
+    required: true
+    type: string
+    secret: false
+  STAGING_DIR:
+    source: host.services.picard.stagingPath
+    required: true
+    type: string
+    secret: false
+  MUSIC_DIR:
+    source: host.services.picard.musicPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: [traefik-net]
+data:
+  declarations:
+    - name: picard-config
+      source: host.services.picard.configPath
+      containerPath: /config
+      backupNotes: Stop Picard before copying its settings and application state.
+    - name: picard-staging
+      source: host.services.picard.stagingPath
+      containerPath: /storage/staging
+      backupNotes: Working music copies; stop edits before backup. Original library is mounted read-only.
+validation:
+  healthChecks:
+    - name: picard-web
+      http:
+        url: http://localhost:5800/
+        expectedStatuses: [200]
+placement:
+  allowedHosts: [t460s]
+  mode: singleton
+autostart: true
+compatibilityPaths: []
