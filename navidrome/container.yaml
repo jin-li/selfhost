@@ -34,7 +34,7 @@ data:
     - name: navidrome-music
       source: host.services.navidrome.musicPath
       containerPath: /music
-      backupNotes: Shared Jellyfin music library mounted read-only; the existing jellyfin top-level replication declaration remains authoritative.
+      backupNotes: Navidrome's own music library, mounted read-only; covered by the t460s navidrome top-level replication declaration.
 validation:
   healthChecks:
     - name: navidrome-health
