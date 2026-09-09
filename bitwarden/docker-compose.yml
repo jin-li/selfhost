@@ -1,0 +1,37 @@
+services:
+  bitwarden:
+    image: ghcr.io/bitwarden/lite:2026.8.1
+    container_name: bitwarden
+    user: "999:999"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      BW_DOMAIN: ${BW_DOMAIN}
+      BW_DB_PROVIDER: sqlite
+      BW_DB_FILE: /etc/bitwarden/vault.db
+      BW_INSTALLATION_ID: ${BW_INSTALLATION_ID}
+      BW_INSTALLATION_KEY: ${BW_INSTALLATION_KEY}
+      BW_ENABLE_SSL: "false"
+      globalSettings__disableUserRegistration: ${DISABLE_USER_REGISTRATION}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=768m
+    volumes:
+      - type: bind
+        source: ${BITWARDEN_DATA_DIR}/config
+        target: /etc/bitwarden
+      - type: bind
+        source: ${BITWARDEN_DATA_DIR}/logs
+        target: /var/log/bitwarden
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      traefik-net:
+        aliases:
+          - bitwarden
+    restart: unless-stopped
+
+networks:
+  traefik-net:
+    external: true
