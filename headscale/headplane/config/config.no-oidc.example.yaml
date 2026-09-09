@@ -5,7 +5,7 @@ server:
     cookie_secure: false
 
 headscale:
-    url: "https://headscale.jinli.io"
+    url: "https://headscale.example.com"
     config_path: "/etc/headscale/config.yaml"
     config_strict: true
 

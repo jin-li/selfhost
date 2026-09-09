@@ -52,5 +52,3 @@ compatibilityPaths:
   - selfhost/cloudflared/.env
   - selfhost/cloudflared/data/cert.pem
   - selfhost/cloudflared/data/credentials.json
-  - /home/lijin/.config/cloudflared/cert.pem
-  - /home/lijin/.config/cloudflared/7ef89d90-4a93-4103-bbd1-1a992ca49767.json
