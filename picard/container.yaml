@@ -4,6 +4,7 @@ projectName: picard
 compose:
   root: selfhost/picard
   base: [docker-compose.yml]
+  hostOverlay: local/{host}/picard/compose.{host}.yaml
 environment:
   CONFIG_DIR:
     source: host.services.picard.configPath
@@ -17,6 +18,11 @@ environment:
     secret: false
   MUSIC_DIR:
     source: host.services.picard.musicPath
+    required: true
+    type: string
+    secret: false
+  FONT_DIR:
+    source: host.services.picard.fontPath
     required: true
     type: string
     secret: false
