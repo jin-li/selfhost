@@ -1,0 +1,56 @@
+schema: 1
+service: vaultwarden
+projectName: vaultwarden
+compose:
+  root: selfhost/vaultwarden
+  base:
+    - docker-compose.yml
+environment:
+  VAULTWARDEN_DATA_DIR:
+    source: host.services.vaultwarden.dataPath
+    required: true
+    type: string
+    secret: false
+  VAULTWARDEN_DOMAIN:
+    source: host.services.vaultwarden.domain
+    required: true
+    type: string
+    secret: false
+  PROXY_NETWORK:
+    source: host.services.vaultwarden.proxyNetwork
+    required: true
+    type: string
+    secret: false
+  SIGNUPS_ALLOWED:
+    source: host.services.vaultwarden.signupsAllowed
+    required: true
+    type: boolean
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - proxy
+data:
+  declarations:
+    - name: vaultwarden-data
+      source: host.services.vaultwarden.dataPath
+      containerPath: /data
+      backupNotes: Use SQLite's online backup command or stop Vaultwarden before copying the complete data directory, including keys and attachments.
+validation:
+  healthChecks:
+    - name: vaultwarden-alive
+      http:
+        url: http://localhost:8080/alive
+        expectedStatuses: [200]
+placement:
+  allowedHosts:
+    - "*"
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/vaultwarden/.env

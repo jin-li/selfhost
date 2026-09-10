@@ -1,0 +1,32 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.37.2
+    container_name: vaultwarden
+    user: "1000:100"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      DOMAIN: ${VAULTWARDEN_DOMAIN}
+      ROCKET_PORT: "8080"
+      SIGNUPS_ALLOWED: ${SIGNUPS_ALLOWED}
+      TZ: ${TZ}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    volumes:
+      - type: bind
+        source: ${VAULTWARDEN_DATA_DIR}
+        target: /data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      proxy:
+        aliases:
+          - vaultwarden
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK}
