@@ -1,0 +1,42 @@
+schema: 1
+service: feishin
+projectName: feishin
+compose:
+  root: selfhost/feishin
+  base:
+    - docker-compose.yml
+environment:
+  SERVER_NAME:
+    source: host.services.feishin.serverName
+    required: true
+    type: string
+    secret: false
+  SERVER_URL:
+    source: host.services.feishin.serverUrl
+    required: true
+    type: string
+    secret: false
+  REMOTE_URL:
+    source: host.services.feishin.remoteUrl
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations: []
+validation:
+  healthChecks:
+    - name: feishin-web
+      http:
+        url: http://localhost:9180/
+        expectedStatuses: [200]
+placement:
+  allowedHosts:
+    - "*"
+  mode: singleton
+autostart: true
+compatibilityPaths:
+  - selfhost/feishin/.env
