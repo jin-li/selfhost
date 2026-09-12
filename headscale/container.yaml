@@ -54,7 +54,7 @@ validation:
     - name: headscale-health
       command: ["wget", "-q", "--spider", "http://localhost:8080/health"]
 placement:
-  allowedHosts: [t460s]
+  allowedHosts: ["*"]
   mode: singleton
 autostart: true
 compatibilityPaths:
