@@ -1,6 +1,6 @@
 services:
   feishin:
-    image: ghcr.io/jeffvli/feishin:1.15.1
+    image: ghcr.io/jeffvli/feishin:1.17.0
     container_name: feishin
     restart: unless-stopped
     security_opt:
