@@ -49,10 +49,6 @@ data:
       source: host.services.qbittorrent.configPath
       containerPath: /config
       backupNotes: Stop qBittorrent before copying its settings and torrent resume state.
-    - name: qbittorrent-downloads
-      source: host.services.qbittorrent.downloadPath
-      containerPath: /downloads
-      backupNotes: Preserve downloaded files alongside the matching resume state when restoring seeding.
 validation:
   healthChecks:
     - name: qbittorrent-version
