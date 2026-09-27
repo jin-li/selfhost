@@ -1,0 +1,22 @@
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:5.2.3
+    container_name: qbittorrent
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+      WEBUI_PORT: ${WEBUI_PORT}
+      TORRENTING_PORT: ${TORRENTING_PORT}
+    volumes:
+      - type: bind
+        source: ${CONFIG_DIR}
+        target: /config
+      - type: bind
+        source: ${DOWNLOAD_DIR}
+        target: /downloads

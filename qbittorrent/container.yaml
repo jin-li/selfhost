@@ -1,0 +1,64 @@
+schema: 1
+service: qbittorrent
+projectName: qbittorrent
+compose:
+  root: selfhost/qbittorrent
+  base: [docker-compose.yml]
+environment:
+  CONFIG_DIR:
+    source: host.services.qbittorrent.configPath
+    required: true
+    type: string
+    secret: false
+  DOWNLOAD_DIR:
+    source: host.services.qbittorrent.downloadPath
+    required: true
+    type: string
+    secret: false
+  PUID:
+    source: host.services.qbittorrent.uid
+    required: true
+    type: integer
+    secret: false
+  PGID:
+    source: host.services.qbittorrent.gid
+    required: true
+    type: integer
+    secret: false
+  WEBUI_PORT:
+    source: host.services.qbittorrent.webuiPort
+    required: true
+    type: integer
+    secret: false
+  TORRENTING_PORT:
+    source: host.services.qbittorrent.peerPort
+    required: true
+    type: integer
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+data:
+  declarations:
+    - name: qbittorrent-config
+      source: host.services.qbittorrent.configPath
+      containerPath: /config
+      backupNotes: Stop qBittorrent before copying its settings and torrent resume state.
+    - name: qbittorrent-downloads
+      source: host.services.qbittorrent.downloadPath
+      containerPath: /downloads
+      backupNotes: Preserve downloaded files alongside the matching resume state when restoring seeding.
+validation:
+  healthChecks:
+    - name: qbittorrent-version
+      command: ["/app/qbittorrent-nox", "--version"]
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: true
+compatibilityPaths: []
