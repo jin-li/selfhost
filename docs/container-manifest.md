@@ -47,7 +47,7 @@ compose:
 Each entry names a container environment variable and declares its `source`:
 
 - **Inventory path** — `global.<path>` or `host.<path>`: resolved from the
-  global values file and the host inventory in `nixos-config` (non-secret).
+  global values file and the host inventory in the deployment configuration (non-secret).
 - **Rendered file** — `runtime.files.<name>`: the runtime path of a file
   declared under `files` (for example, a mounted credentials file).
 - **Secret reference** — an object with `scope`, `path`, and optional `key`:
@@ -56,7 +56,7 @@ Each entry names a container environment variable and declares its `source`:
   CF_API_KEY:
     source:
       scope: host-service     # global | service | host | host-service
-      path: env.yaml          # SOPS-encrypted file in nixos-config/secrets/
+      path: env.yaml          # Encrypted file in the deployment secrets directory
       key: CF_API_KEY         # key inside the file (default: whole file)
       format: yaml            # yaml | json | text | dotenv
     secret: true
@@ -126,10 +126,10 @@ changing it.
 
 ```yaml
 placement:
-  allowedHosts: [halo, surf, t460s]   # hosts where the service may run
+  allowedHosts: ["*"]   # hosts where the service may run
   mode: singleton                     # singleton | active-passive
 ```
 
 A service deploys to a host only when the manifest allows it **and** the host
-inventory enables it. `singleton` means at most one host runs it;
+inventory enables it. `"*"` allows any inventory-enabled host. `singleton` means at most one host runs it;
 `active-passive` allows one active and one standby host.

@@ -31,17 +31,14 @@ persistent-data declarations with backup notes, health checks, allowed hosts
 and placement mode, and legacy compatibility paths. See the
 [manifest reference](docs/container-manifest.md) for the full format.
 
-On managed hosts, `containerctl` (shipped with the private `nixos-config`
-repository) resolves each manifest against the host inventory and SOPS-
-encrypted sources, renders environment and files into a private runtime tree
-that is recreated at boot, and runs Compose from the companion `containers`
-repository: base file(s) from this repo plus the per-host overlay, with the
-rendered values mounted in. Manifests never contain credentials; secret values
-are referenced by scope and path and resolved at render time.
+Manifests are optional integration metadata for deployment tooling. Private
+application definitions and installation-specific configuration belong in the
+operator's own repository, outside this public collection. No deployment
+renderer is required for ordinary Compose usage.
 
-## Manual usage (unmanaged hosts)
+## Manual usage
 
-For hosts not driven by `containerctl`, deploy a stack directly:
+Deploy a stack directly:
 
 1. **Preparation**: run Docker in rootless mode if your distro supports it
    ([Docker documentation](https://docs.docker.com/engine/security/rootless/))
