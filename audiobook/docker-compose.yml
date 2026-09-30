@@ -2,7 +2,7 @@ services:
   audiobook:
     profiles: [cli]
     build: .
-    image: local/audiobook:20260930-cover1
+    image: local/audiobook:20260930-assets1
     user: "${UID:-1000}:${GID:-100}"
     volumes:
       - ${CALIBRE_LIBRARY}:/books:ro
@@ -18,7 +18,7 @@ services:
     tmpfs: [/tmp:size=512m]
   web:
     build: .
-    image: local/audiobook:20260930-cover1
+    image: local/audiobook:20260930-assets1
     container_name: audiobook-web
     restart: unless-stopped
     init: true

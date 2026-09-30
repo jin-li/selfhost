@@ -7,6 +7,7 @@ from pathlib import Path
 import struct
 import subprocess
 import wave
+import zipfile
 
 from ebooklib import epub
 from PIL import Image
@@ -82,8 +83,19 @@ def test_interrupted_resume_packaging_and_dedup(tmp_path, monkeypatch):
     assert len(calls)==count
 
 
-def test_coverless_book_gets_title_art_and_valid_m4b(tmp_path, monkeypatch):
-    source=tmp_path/'coverless.epub'; book(source, with_cover=False)
+def remove_asset(path, suffix):
+    with zipfile.ZipFile(path) as archive:
+        entries=[(item,archive.read(item)) for item in archive.infolist() if not item.filename.endswith(suffix)]
+    with zipfile.ZipFile(path,'w') as archive:
+        for item,data in entries: archive.writestr(item,data)
+
+
+@pytest.mark.parametrize('missing_manifest_image', [False, True])
+def test_coverless_book_gets_title_art_and_valid_m4b(tmp_path, monkeypatch, missing_manifest_image):
+    source=tmp_path/'coverless.epub'; book(source, with_cover=missing_manifest_image)
+    if missing_manifest_image: remove_asset(source, '/cover.jpg')
+    original=r.sha_file(source)
+    assert r.language_for_epub(source)=='en'
     md, chapters, cover, _=r.load_epub(source)
     assert md['title']=='Two chapters: A & B' and len(chapters)==2 and cover is None
     config=tmp_path/'profiles.json'
@@ -99,6 +111,17 @@ def test_coverless_book_gets_title_art_and_valid_m4b(tmp_path, monkeypatch):
     probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_chapters','-of','json',manifest['library_file']]))
     assert len(probe['chapters'])==2
     assert any(stream.get('disposition',{}).get('attached_pic') for stream in probe['streams'])
+    assert r.sha_file(source)==original
+    if missing_manifest_image:
+        assert manifest['metadata']['missing_image_assets']==['EPUB/cover.jpg']
+
+
+def test_missing_chapter_is_never_silently_skipped(tmp_path):
+    source=tmp_path/'incomplete.epub'; book(source)
+    remove_asset(source, '/first.xhtml')
+    for reader in (r.load_epub,r.language_for_epub):
+        with pytest.raises(ValueError,match='missing required file.*first.xhtml'):
+            reader(source)
 
 
 def test_uploaded_cover_overrides_embedded_art(tmp_path, monkeypatch):

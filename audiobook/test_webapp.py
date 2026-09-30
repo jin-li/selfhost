@@ -7,6 +7,7 @@ import sys
 import time
 import wave
 import threading
+import zipfile
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 import pytest
 from ebooklib import epub
@@ -58,6 +59,19 @@ def test_durable_queue_dedup_and_pause(queue):
     assert other.read(a['id'])['status']=='paused'
     assert other.resume(a['id'])['status']=='queued'
     assert webapp.runner.sha_file(queue.books/'Author/book.epub')==before
+
+def test_submission_with_missing_cover_asset(queue):
+    source=queue.books/'Author/book.epub'
+    with zipfile.ZipFile(source) as archive:
+        entries=[(item,archive.read(item)) for item in archive.infolist() if not item.filename.endswith('/cover.jpg')]
+    with zipfile.ZipFile(source,'w') as archive:
+        for item,data in entries: archive.writestr(item,data)
+    before=webapp.runner.sha_file(source)
+    c,h=client(queue)
+    result=c.post('/api/jobs',json={'book_id':1,'profile':'fast','language':'auto'},headers=h,base_url='https://test.example')
+    assert result.status_code==202,result.json
+    assert result.json['status']=='queued'
+    assert webapp.runner.sha_file(source)==before
 
 def test_optional_cover_upload_is_persistent_and_changes_job_identity(queue):
     c,h=client(queue)

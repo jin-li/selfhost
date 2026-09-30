@@ -47,6 +47,9 @@ Inputs are read-only. Checkpointed PCM chunks have text and audio hashes. Transi
 network/server failures are retried. ffmpeg validates and packages a chaptered
 M4B with title, author and cover. When the EPUB has no cover, a title card with
 the book name and author is embedded and recorded in the manifest.
+Missing image files declared in a malformed EPUB manifest are tolerated and
+recorded as `missing_image_assets`; available cover art still takes priority.
+Missing chapter or navigation files stop conversion instead of dropping text.
 Output is published atomically in an author/book folder suitable for Audiobookshelf.
 Successful jobs retain manifest/source/cover and remove temporary PCM/audio.
 

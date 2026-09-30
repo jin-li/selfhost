@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse, contextlib, fcntl, hashlib, io, json, os, re, shutil, subprocess
 import sys, time, urllib.error, urllib.request, wave, http.client
+import posixpath
 from urllib.parse import unquote
 from pathlib import Path
 
@@ -153,18 +154,47 @@ def _clean_text(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", re.sub(r" *\n *", "\n", text)).strip()
 
 
+def read_epub(path: Path):
+    """Use EbookLib while tolerating only absent, declared image assets."""
+    class Reader(epub.EpubReader):
+        def read_file(self, name):
+            try:
+                return super().read_file(name)
+            except KeyError as error:
+                name = posixpath.normpath(name)
+                container = getattr(self, "container", None)
+                manifest = container.find('{%s}manifest' % epub.NAMESPACES['OPF']) if container is not None else None
+                matches = [item for item in manifest if item.get('href') and
+                           posixpath.normpath(posixpath.join(self.opf_dir, unquote(item.get('href')))) == name] if manifest is not None else []
+                if matches and all(item.get('media-type') in epub.IMAGE_MEDIA_TYPES for item in matches):
+                    self.missing_images.append(name)
+                    print(f"EPUB image missing; continuing without artwork asset: {name}", file=sys.stderr, flush=True)
+                    return b""
+                raise ValueError(f"EPUB references missing required file: {name}; conversion cannot safely skip book content") from error
+    reader = Reader(str(path))
+    reader.missing_images = []
+    try:
+        book = reader.load()
+        reader.process()
+    finally:
+        if reader.zf is not None: reader.zf.close()
+    book.missing_image_assets = reader.missing_images
+    return book
+
+
 def load_epub(path: Path, title_fallback="") -> tuple[dict, list[dict], bytes | None, bool]:
     """Read EPUB spine/metadata/cover. Parser approach adapted from p0n1 epub_to_audiobook.
 
     Attribution: ebooklib + BeautifulSoup document iteration follows its
     EpubBookParser pattern, extended here to use spine order and EPUB TOC fragments.
     """
-    book = epub.read_epub(str(path))
+    book = read_epub(path)
     def meta(name, default=""):
         values = book.get_metadata("DC", name)
         return values[0][0] if values else default
     md = {"title": meta("title", title_fallback or path.stem), "author": meta("creator", ""),
           "language": meta("language", "")}
+    if book.missing_image_assets: md["missing_image_assets"] = book.missing_image_assets
     for field in ("publisher", "description", "date"):
         if meta(field): md[field] = meta(field)
     toc = _toc_links(book.toc)
@@ -332,7 +362,7 @@ def write_title_cover(title: str, author: str, dest: Path) -> None:
 
 
 def language_for_epub(path: Path) -> str:
-    values = epub.read_epub(str(path)).get_metadata("DC", "language")
+    values = read_epub(path).get_metadata("DC", "language")
     return (values[0][0] if values else "en") or "en"
 
 
