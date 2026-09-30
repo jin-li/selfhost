@@ -59,7 +59,7 @@ def test_interrupted_resume_packaging_and_dedup(tmp_path, monkeypatch):
     monkeypatch.setattr(r,'tts',first_run)
     with pytest.raises(RuntimeError,match='simulated interruption'):
         r.convert(source,'fast',config,state,library,'en')
-    job=next(state.iterdir())
+    job=next(path for path in state.iterdir() if (path/'manifest.json').is_file())
     first_wave=next((job/'chunks'/'0001').glob('*.wav'))
     wave_sha=r.sha_file(first_wave)
     def resumed(url,cfg,text,language):

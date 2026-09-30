@@ -1,7 +1,8 @@
 services:
   audiobook:
+    profiles: [cli]
     build: .
-    image: local/audiobook:20260930
+    image: local/audiobook:20260930-web1
     user: "${UID:-1000}:${GID:-100}"
     volumes:
       - ${CALIBRE_LIBRARY}:/books:ro
@@ -15,6 +16,39 @@ services:
     security_opt: [no-new-privileges:true]
     read_only: true
     tmpfs: [/tmp:size=512m]
+  web:
+    build: .
+    image: local/audiobook:20260930-web1
+    container_name: audiobook-web
+    restart: unless-stopped
+    init: true
+    entrypoint: [python, /app/webapp.py]
+    user: "${UID:-1000}:${GID:-100}"
+    environment:
+      WEB_ORIGIN: ${WEB_ORIGIN:?external origin required}
+      WEB_BASE_PATH: ${WEB_BASE_PATH:-/}
+      LISTEN_URL: ${LISTEN_URL:-}
+    volumes:
+      - ${CALIBRE_LIBRARY}:/books:ro
+      - ${STATE_DIR}:/state
+      - ${LIBRARY_DIR}:/library
+      - ${PROFILES_FILE}:/config/profiles.json:ro
+    networks: [tts, traefik-net]
+    mem_limit: 2g
+    cpus: 2
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp:size=512m]
+    stop_grace_period: 30s
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request,json; assert json.load(urllib.request.urlopen('http://127.0.0.1:8080/health'))['healthy']"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
   kokoro:
     image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.2@sha256:9f68713fb42c9ef31c876eb57150f7e7be37855c3ccdda7287dc8b7376525142
     # Use the image's installed environment; upstream uv run rebuilds at startup.
@@ -37,3 +71,5 @@ services:
       options: {max-size: 10m, max-file: '3'}
 networks:
   tts: {}
+  traefik-net:
+    external: true

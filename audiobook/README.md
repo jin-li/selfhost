@@ -1,6 +1,6 @@
 # Explicit local audiobook jobs
 
-Build with `docker compose build audiobook`, start the CPU TTS service with
+Build with `docker compose build audiobook web`, start the CPU TTS service with
 `docker compose up -d kokoro`, and select one EPUB:
 
 ```sh
@@ -62,3 +62,33 @@ EbookLib, BeautifulSoup, Pillow, requests, pytest and ffmpeg/ffprobe. Fixture au
 checks restart recovery and packaging; a real synthesis test is still necessary
 when adding/updating a model. Technical validation cannot guarantee a generative
 voice pronounces every word correctly.
+
+## Web queue
+
+The optional `web` service provides Calibre EPUB search, profile selection,
+a persistent one-at-a-time queue, progress, pause, and resume. It is a small
+custom interface around the same converter, not a separate ebook/TTS engine.
+Read-only `metadata.db` queries identify books; API requests select a book ID,
+never an arbitrary filesystem path. Closing the browser does not stop a job.
+
+Set `WEB_ORIGIN` to the external origin, `WEB_BASE_PATH` to its path prefix,
+and `LISTEN_URL` to the audiobook server. Place it behind an authenticating
+reverse proxy that supplies `Remote-User`, strips the path prefix, and redirects
+the prefix without a trailing slash to its slash form. It fails closed without
+the authentication header, uses CSRF tokens and same-origin POST checks, and
+publishes no host port. Internal trusted Docker clients are part of this trust
+boundary. Start with `docker compose up -d web kokoro`.
+
+The CLI service has the `cli` Compose profile, preventing automatic conversion
+when the stack starts. Explicit `docker compose run --rm audiobook ...` still
+works. Queue records, a generated session signing key, logs, and queued source
+snapshots live under `STATE_DIR/.web`; include this directory in state backups.
+An interrupted running web job returns to the queue after server restart;
+explicitly paused jobs stay paused. Pause may discard the in-flight chunk but
+keeps completed checkpoints. Finished jobs remove the extra queued snapshot.
+Only one web scheduler may use a state directory; a filesystem lock enforces it.
+
+Run `pytest test_webapp.py` alongside the converter tests to exercise auth/CSRF,
+path validation, durable deduplication, scheduler recovery, and real subprocess
+pause/resume with ffmpeg packaging. Flask runs under Waitress following its
+[production deployment guidance](https://flask.palletsprojects.com/en/stable/deploying/waitress/).

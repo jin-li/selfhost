@@ -5,6 +5,21 @@ compose:
   root: selfhost/audiobook
   base: [docker-compose.yml]
 environment:
+  WEB_ORIGIN:
+    source: host.services.audiobook.webOrigin
+    required: true
+    type: string
+    secret: false
+  WEB_BASE_PATH:
+    source: host.services.audiobook.webBasePath
+    required: true
+    type: string
+    secret: false
+  LISTEN_URL:
+    source: host.services.audiobook.listenUrl
+    required: true
+    type: string
+    secret: false
   CALIBRE_LIBRARY:
     source: host.services.audiobook.sourcePath
     required: true
@@ -27,11 +42,11 @@ environment:
     secret: false
 files: {}
 networks:
-  required: []
+  required: [traefik-net]
 placement:
   allowedHosts: ["*"]
   mode: singleton
-autostart: false
+autostart: true
 data:
   declarations:
     - name: job-state
