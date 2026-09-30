@@ -1,0 +1,39 @@
+services:
+  audiobook:
+    build: .
+    image: local/audiobook:20260930
+    user: "${UID:-1000}:${GID:-100}"
+    volumes:
+      - ${CALIBRE_LIBRARY}:/books:ro
+      - ${STATE_DIR}:/state
+      - ${LIBRARY_DIR}:/library
+      - ${PROFILES_FILE}:/config/profiles.json:ro
+    networks: [tts]
+    mem_limit: 2g
+    cpus: 2
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp:size=512m]
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.2@sha256:9f68713fb42c9ef31c876eb57150f7e7be37855c3ccdda7287dc8b7376525142
+    # Use the image's installed environment; upstream uv run rebuilds at startup.
+    command: [/app/.venv/bin/python, -m, uvicorn, api.src.main:app, --host, 0.0.0.0, --port, '8880']
+    container_name: audiobook-kokoro
+    restart: unless-stopped
+    networks: [tts]
+    mem_limit: 4g
+    cpus: 2
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://127.0.0.1:8880/v1/audio/voices]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 5m
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+networks:
+  tts: {}

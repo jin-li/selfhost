@@ -1,0 +1,5 @@
+services:
+  tts-qwen:
+    build:
+      context: .
+      network: host

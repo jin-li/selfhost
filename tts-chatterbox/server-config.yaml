@@ -1,0 +1,28 @@
+server:
+  host: 0.0.0.0
+  port: 8004
+  use_ngrok: false
+  use_auth: false
+  log_file_path: /tmp/tts.log
+model:
+  repo_id: chatterbox-multilingual
+tts_engine:
+  device: cuda
+  predefined_voices_path: voices
+  reference_audio_path: reference_audio
+  default_voice_id: Emily.wav
+paths:
+  model_cache: /cache
+  output: /tmp/outputs
+generation_defaults:
+  temperature: 0.8
+  exaggeration: 0.5
+  cfg_weight: 0.5
+  seed: 42
+  speed_factor: 1.0
+  language: en
+audio_output:
+  format: wav
+  sample_rate: 24000
+  max_reference_duration_sec: 30
+  save_to_disk: false

@@ -1,0 +1,28 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:2.37.1@sha256:581d68b2a6fc7ebf58d81c878a9f387cbbc0d88ac9d37b298b9cee10168af85b
+    container_name: audiobookshelf
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${DATA_DIR}/config:/config
+      - ${DATA_DIR}/metadata:/metadata
+      - ${LIBRARY_DIR}:/audiobooks:ro
+    networks:
+      traefik-net:
+        aliases: [audiobookshelf]
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:80/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+networks:
+  traefik-net:
+    external: true

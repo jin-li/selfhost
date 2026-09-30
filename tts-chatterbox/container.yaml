@@ -1,0 +1,32 @@
+schema: 1
+service: tts-chatterbox
+projectName: tts-chatterbox
+compose:
+  root: selfhost/tts-chatterbox
+  base: [docker-compose.yml]
+environment:
+  BIND_ADDRESS:
+    source: host.services.tts-chatterbox.bindAddress
+    required: true
+    type: string
+    secret: false
+  CACHE_DIR:
+    source: host.services.tts-chatterbox.cachePath
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: true
+data:
+  declarations:
+    - name: model-cache
+      source: host.services.tts-chatterbox.cachePath
+      containerPath: /cache
+      backupNotes: Model weights can be downloaded again; retain revision information.
+validation:
+  healthChecks: []

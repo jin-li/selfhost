@@ -1,0 +1,46 @@
+schema: 1
+service: audiobook
+projectName: audiobook
+compose:
+  root: selfhost/audiobook
+  base: [docker-compose.yml]
+environment:
+  CALIBRE_LIBRARY:
+    source: host.services.audiobook.sourcePath
+    required: true
+    type: string
+    secret: false
+  STATE_DIR:
+    source: host.services.audiobook.statePath
+    required: true
+    type: string
+    secret: false
+  LIBRARY_DIR:
+    source: host.services.audiobook.libraryPath
+    required: true
+    type: string
+    secret: false
+  PROFILES_FILE:
+    source: host.services.audiobook.profilesFile
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: false
+data:
+  declarations:
+    - name: job-state
+      source: host.services.audiobook.statePath
+      containerPath: /state
+      backupNotes: Retain source snapshots, manifests, and unfinished chunks. Finished temporary audio is removed after publication.
+    - name: audiobook-output
+      source: host.services.audiobook.libraryPath
+      containerPath: /library
+      backupNotes: Back up completed M4B files with Audiobookshelf state.
+validation:
+  healthChecks: []

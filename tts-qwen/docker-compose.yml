@@ -1,0 +1,28 @@
+services:
+  tts-qwen:
+    image: ${QWEN_IMAGE:?pinned Qwen image required}
+    container_name: tts-qwen
+    restart: unless-stopped
+    entrypoint: [python3, /opt/tts-bootstrap.py]
+    command: [--host, 0.0.0.0, --port, '8001']
+    ports:
+      - "${BIND_ADDRESS:?private bind address required}:18005:8001"
+    environment:
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_OFFLINE: ${HF_HUB_OFFLINE:-0}
+      QWEN3_TTS_MAX_TEXT_LENGTH: '600'
+    volumes:
+      - ./bootstrap.py:/opt/tts-bootstrap.py:ro
+      - ${DATA_DIR}/cache:/root/.cache/huggingface
+      - ${DATA_DIR}/voices:/data/voices
+    mem_limit: 16g
+    shm_size: 2g
+    healthcheck:
+      test: [CMD, python3, -c, "import urllib.request,json; d=json.load(urllib.request.urlopen('http://127.0.0.1:8001/health')); assert d['model_ready'] and d['device']=='cuda'"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 10m
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

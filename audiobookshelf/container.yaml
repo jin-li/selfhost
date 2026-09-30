@@ -1,0 +1,37 @@
+schema: 1
+service: audiobookshelf
+projectName: audiobookshelf
+compose:
+  root: selfhost/audiobookshelf
+  base: [docker-compose.yml]
+environment:
+  DATA_DIR:
+    source: host.services.audiobookshelf.dataPath
+    required: true
+    type: string
+    secret: false
+  LIBRARY_DIR:
+    source: host.services.audiobookshelf.libraryPath
+    required: true
+    type: string
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: [traefik-net]
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: true
+data:
+  declarations:
+    - name: server-state
+      source: host.services.audiobookshelf.dataPath
+      containerPath: /config
+      backupNotes: Stop Audiobookshelf before copying its SQLite state; library files are read-only to the server.
+validation:
+  healthChecks: []

@@ -1,0 +1,30 @@
+services:
+  tts-chatterbox:
+    build: .
+    image: local/tts-chatterbox:915ae289-rocm7.2
+    container_name: tts-chatterbox
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:?private bind address required}:18004:8004"
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    shm_size: 4g
+    mem_limit: 24g
+    environment:
+      HF_HOME: /cache
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TTS_BF16: 'off'
+    volumes:
+      - ${CACHE_DIR}:/cache
+      - ${CACHE_DIR}/pkuseg:/root/.pkuseg
+      - ./server-config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request,json; d=json.load(urllib.request.urlopen('http://127.0.0.1:8004/api/model-info')); assert d['loaded'] and d['type']=='multilingual' and d['device']=='cuda'"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 10m
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

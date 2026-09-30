@@ -1,0 +1,43 @@
+schema: 1
+service: tts-qwen
+projectName: tts-qwen
+compose:
+  root: selfhost/tts-qwen
+  base: [docker-compose.yml]
+  hostOverlay: local/{host}/tts-qwen/compose.{host}.yaml
+environment:
+  HF_HUB_OFFLINE:
+    source: host.services.tts-qwen.hubOffline
+    required: true
+    type: string
+    secret: false
+  BIND_ADDRESS:
+    source: host.services.tts-qwen.bindAddress
+    required: true
+    type: string
+    secret: false
+  DATA_DIR:
+    source: host.services.tts-qwen.dataPath
+    required: true
+    type: string
+    secret: false
+  QWEN_IMAGE:
+    source: host.services.tts-qwen.image
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: true
+data:
+  declarations:
+    - name: models-and-voices
+      source: host.services.tts-qwen.dataPath
+      containerPath: /data
+      backupNotes: Model weights are replaceable; back up any user-created voice files.
+validation:
+  healthChecks: []

@@ -1,0 +1,5 @@
+# Standard NVIDIA Container Toolkit deployment. Host-specific driver injection
+# belongs in a private overlay on installations without the toolkit.
+services:
+  tts-qwen:
+    gpus: all
