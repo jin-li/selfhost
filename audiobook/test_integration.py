@@ -5,6 +5,7 @@ import json
 import math
 from pathlib import Path
 import struct
+import subprocess
 import wave
 
 from ebooklib import epub
@@ -16,7 +17,7 @@ r = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(r)
 
 
-def book(path):
+def book(path, with_cover=True):
     b = epub.EpubBook()
     b.set_identifier('integration-book')
     b.set_title('Two chapters: A & B')
@@ -24,7 +25,7 @@ def book(path):
     b.set_language('en')
     img = io.BytesIO()
     Image.new('RGB', (120,160), (40,90,120)).save(img, format='JPEG')
-    b.set_cover('cover.jpg', img.getvalue())
+    if with_cover: b.set_cover('cover.jpg', img.getvalue())
     first = epub.EpubHtml(title='First', file_name='first.xhtml', lang='en')
     first.content = '<h1>First</h1><p>Short chapter one.</p>'
     second = epub.EpubHtml(title='Second', file_name='second.xhtml', lang='en')
@@ -79,3 +80,37 @@ def test_interrupted_resume_packaging_and_dedup(tmp_path, monkeypatch):
     count=len(calls)
     assert r.convert(source,'fast',config,state,library,'en')==identity
     assert len(calls)==count
+
+
+def test_coverless_book_gets_title_art_and_valid_m4b(tmp_path, monkeypatch):
+    source=tmp_path/'coverless.epub'; book(source, with_cover=False)
+    md, chapters, cover, _=r.load_epub(source)
+    assert md['title']=='Two chapters: A & B' and len(chapters)==2 and cover is None
+    config=tmp_path/'profiles.json'
+    config.write_text(json.dumps({'fast': {'url':'http://local/v1','model':'test','voice':'test','max_chars':100}}))
+    monkeypatch.setattr(r,'tts',lambda *args: pcm())
+    state=tmp_path/'jobs'; library=tmp_path/'library'
+    identity=r.convert(source,'fast',config,state,library,'en')
+    manifest=json.loads((state/identity/'manifest.json').read_text())
+    assert manifest['status']=='published' and manifest['cover_source']=='title'
+    assert len(manifest['chapters'])==2
+    with Image.open(state/identity/'cover.jpg') as image:
+        assert image.format=='JPEG' and image.size==(800,800)
+    probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_chapters','-of','json',manifest['library_file']]))
+    assert len(probe['chapters'])==2
+    assert any(stream.get('disposition',{}).get('attached_pic') for stream in probe['streams'])
+
+
+def test_uploaded_cover_overrides_embedded_art(tmp_path, monkeypatch):
+    source=tmp_path/'book.epub'; book(source)
+    config=tmp_path/'profiles.json'
+    config.write_text(json.dumps({'fast': {'url':'http://local/v1','model':'test','voice':'test','max_chars':100}}))
+    uploaded=tmp_path/'uploaded.png'; Image.new('RGB',(80,100),'orange').save(uploaded)
+    monkeypatch.setattr(r,'tts',lambda *args: pcm())
+    state=tmp_path/'jobs'
+    identity=r.convert(source,'fast',config,state,tmp_path/'library','en',cover_override=uploaded)
+    manifest=json.loads((state/identity/'manifest.json').read_text())
+    assert manifest['status']=='published' and manifest['cover_source']=='uploaded'
+    with Image.open(state/identity/'cover.jpg') as image:
+        assert image.getpixel((20,20))[0]>200
+    assert r.sha_file(source)==manifest['source_sha256']

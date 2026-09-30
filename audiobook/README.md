@@ -45,7 +45,8 @@ An upgrade changing the pipeline version refuses old-job resume: finish jobs fir
 
 Inputs are read-only. Checkpointed PCM chunks have text and audio hashes. Transient
 network/server failures are retried. ffmpeg validates and packages a chaptered
-M4B with title, author and cover; a missing source cover gets a recorded fallback.
+M4B with title, author and cover. When the EPUB has no cover, a title card with
+the book name and author is embedded and recorded in the manifest.
 Output is published atomically in an author/book folder suitable for Audiobookshelf.
 Successful jobs retain manifest/source/cover and remove temporary PCM/audio.
 
@@ -57,7 +58,7 @@ EPUB parsing uses EbookLib and BeautifulSoup, with a parser adapted from
 at `0380fec519fdfaa2bf0948ad1ad8f5fe4b28b2a1`; its runtime file selector accepts
 lossless WAV chapters. Both MIT license notices are retained.
 
-Run tests with `pytest test_runner.py test_integration.py` in an environment with
+Run tests with `pytest test_runner.py test_integration.py test_webapp.py` in an environment with
 EbookLib, BeautifulSoup, Pillow, requests, pytest and ffmpeg/ffprobe. Fixture audio
 checks restart recovery and packaging; a real synthesis test is still necessary
 when adding/updating a model. Technical validation cannot guarantee a generative
@@ -66,7 +67,11 @@ voice pronounces every word correctly.
 ## Web queue
 
 The optional `web` service provides Calibre EPUB search, profile selection,
-a persistent one-at-a-time queue, progress, pause, and resume. It is a small
+a persistent one-at-a-time queue, optional cover-image upload, progress, pause,
+and resume. An uploaded image (up to 5 MiB) replaces EPUB artwork for that job;
+otherwise the EPUB cover is used, or a generated title card if none exists.
+Uploads are normalized to JPEG, stored with job state, and included in job
+identity so retries and duplicate submissions keep the same artwork. It is a small
 custom interface around the same converter, not a separate ebook/TTS engine.
 Read-only `metadata.db` queries identify books; API requests select a book ID,
 never an arbitrary filesystem path. Closing the browser does not stop a job.

@@ -59,6 +59,28 @@ def test_durable_queue_dedup_and_pause(queue):
     assert other.resume(a['id'])['status']=='queued'
     assert webapp.runner.sha_file(queue.books/'Author/book.epub')==before
 
+def test_optional_cover_upload_is_persistent_and_changes_job_identity(queue):
+    c,h=client(queue)
+    image=io.BytesIO();Image.new('RGB',(40,50),'orange').save(image,format='PNG')
+    raw=image.getvalue()
+    def submit(cover):
+        return c.post('/api/jobs',data={'book_id':'1','profile':'fast','language':'en','cover':(io.BytesIO(cover),'cover.png')},headers=h,base_url='https://test.example')
+    base=queue.submit(1,'fast','en')
+    before=webapp.runner.sha_file(queue.books/'Author/book.epub')
+    response=submit(raw);assert response.status_code==202,response.json
+    uploaded=response.json
+    assert uploaded['id']!=base['id']
+    assert submit(raw).json['id']==uploaded['id']
+    assert queue.read(uploaded['id'])['cover_uploaded'] is True
+    saved=queue.state/uploaded['id']/'cover-upload.jpg'
+    with Image.open(saved) as cover:
+        assert cover.format=='JPEG' and cover.getpixel((10,10))[0]>200
+    assert webapp.runner.sha_file(queue.books/'Author/book.epub')==before
+    invalid=submit(b'not an image')
+    assert invalid.status_code==400 and 'Invalid cover image' in invalid.json['error']
+    large=submit(b'x'*(webapp.MAX_COVER_BYTES+1))
+    assert large.status_code in (400,413)
+
 def test_missing_published_audio_requeues_same_job(queue):
     job=queue.submit(1,'fast','en')
     record=queue.read(job['id'])

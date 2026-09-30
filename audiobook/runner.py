@@ -12,7 +12,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup, NavigableString, Comment
 from ebooklib import ITEM_DOCUMENT, ITEM_COVER, ITEM_IMAGE, epub
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 PIPELINE_VERSION = "2026-09-30.2"
 BLOCKS = {"p", "div", "section", "article", "blockquote", "li", "h1", "h2", "h3", "h4", "h5", "h6", "br", "hr", "tr"}
@@ -261,14 +261,74 @@ def wav_record(path: Path, text_hash: str) -> dict:
     return {"text_sha256": text_hash, "audio_sha256": sha(path.read_bytes())}
 
 
-def write_cover(raw: bytes, dest: Path) -> None:
-    """Validate arbitrary EPUB art and commit a universally attachable JPEG."""
+def normalize_cover(raw: bytes) -> bytes:
+    """Decode untrusted artwork, limit its dimensions, and discard image metadata."""
     try:
-        with Image.open(io.BytesIO(raw)) as im:
-            im.convert("RGB").save(dest.with_suffix(".part"), "JPEG", quality=92)
-    except Exception as e: raise RuntimeError(f"invalid EPUB cover image: {e}")
-    with dest.with_suffix(".part").open("rb") as f: os.fsync(f.fileno())
-    os.replace(dest.with_suffix(".part"), dest); _fsync_dir(dest.parent)
+        with Image.open(io.BytesIO(raw)) as source:
+            if source.width < 1 or source.height < 1 or source.width * source.height > 25_000_000:
+                raise ValueError("Cover dimensions must be at most 25 megapixels")
+            image = ImageOps.exif_transpose(source).convert("RGB")
+            image.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+            output = io.BytesIO()
+            image.save(output, "JPEG", quality=90)
+            return output.getvalue()
+    except (OSError, ValueError) as error:
+        raise ValueError(f"Invalid cover image: {error}") from error
+
+
+def save_cover_jpeg(raw: bytes, dest: Path) -> None:
+    """Commit a validated JPEG without altering its content hash."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_suffix(dest.suffix + ".part")
+    with part.open("wb") as handle:
+        handle.write(raw); handle.flush(); os.fsync(handle.fileno())
+    os.replace(part, dest); _fsync_dir(dest.parent)
+
+
+def write_cover(raw: bytes, dest: Path) -> None:
+    """Normalize an EPUB or uploaded image to an attachable JPEG."""
+    save_cover_jpeg(normalize_cover(raw), dest)
+
+
+def write_title_cover(title: str, author: str, dest: Path) -> None:
+    """Give a coverless book readable artwork without requiring an upload."""
+    image = Image.new("RGB", (800, 800), "#142b3c")
+    draw = ImageDraw.Draw(image)
+    font_path = next((path for path in (
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ) if Path(path).is_file()), None)
+    def font(size):
+        return ImageFont.truetype(font_path, size) if font_path else ImageFont.load_default(size=size)
+    def lines_for(value, face):
+        lines, line = [], ""
+        for char in (value or "Untitled"):
+            if char == "\n":
+                lines.append(line.strip()); line = ""; continue
+            candidate = line + char
+            if line and draw.textlength(candidate, font=face) > 640:
+                lines.append(line.strip()); line = char.lstrip()
+            else:
+                line = candidate
+        if line.strip(): lines.append(line.strip())
+        return lines or ["Untitled"]
+    for size in range(72, 17, -2):
+        face = font(size)
+        lines = lines_for(title, face)
+        step = int(size * 1.35)
+        if len(lines) * step <= 450: break
+    draw.text((80, 95), "AUDIOBOOK", font=font(23), fill="#81b9c6")
+    top = 355 - (len(lines) * step) // 2
+    for line in lines:
+        draw.text((80, top), line, font=face, fill="white")
+        top += step
+    if author:
+        author_face = font(25)
+        author_lines = lines_for(author, author_face)[:2]
+        for offset, line in enumerate(author_lines):
+            draw.text((80, 675 + offset * 35), line, font=author_face, fill="#c7dce3")
+    output = io.BytesIO(); image.save(output, "JPEG", quality=90)
+    save_cover_jpeg(output.getvalue(), dest)
 
 
 def language_for_epub(path: Path) -> str:
@@ -317,12 +377,19 @@ def cleanup_transient(job: Path) -> None:
     (job / "book.m4b").unlink(missing_ok=True)
 
 
-def convert(source: Path, profile_name: str, profiles: Path, state: Path, library: Path, language="en", profile_override=None) -> str:
+def job_identity(source_hash: str, config: dict, language: str, cover_hash: str = "") -> str:
+    payload = {"source": source_hash, "profile": config, "version": PIPELINE_VERSION, "language": language}
+    if cover_hash: payload["cover_sha256"] = cover_hash
+    return sha(json.dumps(payload, sort_keys=True))
+
+
+def convert(source: Path, profile_name: str, profiles: Path, state: Path, library: Path, language="en", profile_override=None, cover_override: Path | None = None) -> str:
     cfgs = json.loads(profiles.read_text()) if profile_override is None else {}
     if language == "auto": language = language_for_epub(source)
     config = effective_profile(profile_override if profile_override is not None else (cfgs[profile_name] if profile_name in cfgs else (_ for _ in ()).throw(ValueError("unknown profile"))), language)
     source_hash = sha_file(source)
-    identity = sha(json.dumps({"source": source_hash, "profile": config, "version": PIPELINE_VERSION, "language": language}, sort_keys=True))
+    cover_hash = sha_file(cover_override) if cover_override is not None else ""
+    identity = job_identity(source_hash, config, language, cover_hash)
     job = state / identity; job.mkdir(parents=True, exist_ok=True)
     with (job / ".lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -344,18 +411,19 @@ def convert(source: Path, profile_name: str, profiles: Path, state: Path, librar
         fallback_title = (manifest.get("metadata") or {}).get("title") or source.stem
         md, chapters, cover, generated = load_epub(snap, fallback_title)
         cover_path = job / "cover.jpg"
-        if cover:
+        if cover_override is not None:
+            write_cover(cover_override.read_bytes(), cover_path)
+            cover_source = "uploaded"
+        elif cover:
             write_cover(cover, cover_path)
-        elif not cover_path.exists():
-            # A valid generated fallback keeps packaging deterministic and recorded.
-            generated = True
-            ff = shutil.which("ffmpeg")
-            if not ff: raise RuntimeError("cover missing and ffmpeg unavailable")
-            p = run([ff, "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=600x600", "-frames:v", "1", "-y", str(cover_path)])
-            if p.returncode: raise RuntimeError("could not generate fallback cover")
-        if not cover: generated = True
+            cover_source = "epub"
+        else:
+            write_title_cover(md["title"], md["author"], cover_path)
+            cover_source = "title"
+        generated = cover_source == "title"
         manifest = {"version": PIPELINE_VERSION, "identity": identity, "source_sha256": source_hash,
-                    "profile_name": profile_name, "profile": config, "language": language, "metadata": md, "cover_generated": generated,
+                    "profile_name": profile_name, "profile": config, "language": language, "metadata": md,
+                    "cover_generated": generated, "cover_source": cover_source,
                     "status": "rendering", "chapters": []}
         atomic_json(job / "manifest.json", manifest)
         print(f"job {identity}", file=sys.stderr, flush=True)
@@ -460,5 +528,9 @@ def main():
     else:
         m = _manifest(a.state / a.job)
         if m.get("version") != PIPELINE_VERSION: raise RuntimeError("pipeline version mismatch; resume refused")
-        print(convert(a.state / a.job / "source.epub", m['profile_name'], a.profiles, a.state, a.library, m['language'], m['profile']))
+        uploaded = a.state / a.job / "cover-upload.jpg"
+        if m.get("cover_source") == "uploaded" and not uploaded.is_file():
+            raise RuntimeError("uploaded cover is missing; restore the job state before resuming")
+        print(convert(a.state / a.job / "source.epub", m['profile_name'], a.profiles, a.state, a.library,
+                      m['language'], m['profile'], uploaded if m.get("cover_source") == "uploaded" else None))
 if __name__ == "__main__": main()

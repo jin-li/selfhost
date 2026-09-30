@@ -19,6 +19,7 @@ from werkzeug.exceptions import HTTPException
 import runner
 
 JOB_ID = re.compile(r'^[0-9a-f]{64}$')
+MAX_COVER_BYTES = 5 * 1024 * 1024
 
 class Queue:
     def __init__(self, books, state, library, profiles):
@@ -52,7 +53,7 @@ class Queue:
             rows=[dict(x) for x in db.execute(sql+' ORDER BY b.sort LIMIT 100',args)]
         return rows,total
 
-    def submit(self, book_id, profile, language):
+    def submit(self, book_id, profile, language, cover=None):
         profiles=json.loads(self.profiles.read_text())
         if profile not in profiles: raise ValueError('Unknown profile')
         rows,_=self.catalog(book_id=book_id)
@@ -64,8 +65,12 @@ class Queue:
         if not isinstance(language,str) or not re.fullmatch(r'[A-Za-z_-]{2,16}',language): raise ValueError('Invalid language')
         settings=runner.effective_profile(profiles[profile],language)
         source_hash=runner.sha_file(source)
-        identity=runner.sha(json.dumps({'source':source_hash,'profile':settings,'version':runner.PIPELINE_VERSION,'language':language},sort_keys=True))
+        normalized_cover=runner.normalize_cover(cover) if cover is not None else None
+        cover_hash=runner.sha(normalized_cover) if normalized_cover is not None else ''
+        identity=runner.job_identity(source_hash,settings,language,cover_hash)
         with self.guard:
+            if normalized_cover is not None:
+                runner.save_cover_jpeg(normalized_cover,self.state/identity/'cover-upload.jpg')
             path=self.records/(identity+'.json')
             if path.exists():
                 record=self.read(identity)
@@ -83,7 +88,7 @@ class Queue:
             os.replace(snap.with_suffix('.part'),snap);runner._fsync_dir(folder)
             if runner.sha_file(snap)!=source_hash: raise ValueError('Ebook changed; select it again')
             os.chmod(snap,0o444)
-            record={'id':identity,'title':book['title'],'profile':profile,'settings':settings,'source':str(snap),'language':language,'status':'queued','created':time.time(),'error':'','version':runner.PIPELINE_VERSION}
+            record={'id':identity,'title':book['title'],'profile':profile,'settings':settings,'source':str(snap),'language':language,'status':'queued','created':time.time(),'error':'','version':runner.PIPELINE_VERSION,'cover_uploaded':normalized_cover is not None}
             manifest=runner._manifest(self.state/identity)
             if manifest.get('status')=='published':
                 dest=Path(manifest.get('library_file',''))
@@ -197,7 +202,7 @@ def create_app(queue, origin, base_path='/', require_auth=True, listen_url=''):
         fd=os.open(key,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
         with os.fdopen(fd,'w') as f:f.write(secrets.token_hex(32))
     except FileExistsError:pass
-    app.config.update(SECRET_KEY=key.read_text(),MAX_CONTENT_LENGTH=4096,SESSION_COOKIE_NAME='audiobook_queue',SESSION_COOKIE_PATH=base_path,SESSION_COOKIE_SECURE=origin.startswith('https:'),SESSION_COOKIE_HTTPONLY=True,SESSION_COOKIE_SAMESITE='Strict')
+    app.config.update(SECRET_KEY=key.read_text(),MAX_CONTENT_LENGTH=MAX_COVER_BYTES+65536,SESSION_COOKIE_NAME='audiobook_queue',SESSION_COOKIE_PATH=base_path,SESSION_COOKIE_SECURE=origin.startswith('https:'),SESSION_COOKIE_HTTPONLY=True,SESSION_COOKIE_SAMESITE='Strict')
     @app.before_request
     def protect():
         if request.path=='/health':return
@@ -205,7 +210,8 @@ def create_app(queue, origin, base_path='/', require_auth=True, listen_url=''):
         if request.method=='POST':
             if request.headers.get('Origin')!=origin or not secrets.compare_digest(request.headers.get('X-CSRF-Token',''),session.get('csrf','missing')):
                 return jsonify(error='Session expired; refresh the page and try again'),403
-            if not request.is_json:return jsonify(error='JSON request required'),415
+            if not request.is_json and not (request.path=='/api/jobs' and request.mimetype=='multipart/form-data'):
+                return jsonify(error='JSON or multipart request required'),415
     @app.after_request
     def headers(response):
         response.headers['Cache-Control']='no-store'
@@ -236,7 +242,14 @@ def create_app(queue, origin, base_path='/', require_auth=True, listen_url=''):
     def jobs():return jsonify(jobs=queue.jobs())
     @app.post('/api/jobs')
     def submit():
-        data=request.get_json();return jsonify(queue.submit(data['book_id'],data['profile'],data.get('language','auto'))),202
+        data=request.get_json() if request.is_json else request.form
+        upload=request.files.get('cover') if not request.is_json else None
+        cover=None
+        if upload and upload.filename:
+            cover=upload.stream.read(MAX_COVER_BYTES+1)
+            if len(cover)>MAX_COVER_BYTES:raise ValueError('Cover image must be at most 5 MiB')
+            if not cover:raise ValueError('Cover image is empty')
+        return jsonify(queue.submit(data['book_id'],data['profile'],data.get('language','auto'),cover)),202
     @app.post('/api/jobs/<identity>/pause')
     def pause(identity):return jsonify(queue.pause(identity))
     @app.post('/api/jobs/<identity>/resume')
@@ -249,7 +262,9 @@ if __name__=='__main__':
         if r['version']!=runner.PIPELINE_VERSION:raise RuntimeError('Worker version changed')
         source=Path(sys.argv[3])/r['id']/'source.epub'
         if not source.exists():source=Path(r['source'])
-        identity=runner.convert(source,r['profile'],Path('/config/profiles.json'),Path(sys.argv[3]),Path(sys.argv[4]),r['language'],r['settings'])
+        cover=Path(sys.argv[3])/r['id']/'cover-upload.jpg' if r.get('cover_uploaded') else None
+        if cover is not None and not cover.is_file():raise RuntimeError('Uploaded cover is missing; restore the job state before resuming')
+        identity=runner.convert(source,r['profile'],Path('/config/profiles.json'),Path(sys.argv[3]),Path(sys.argv[4]),r['language'],r['settings'],cover)
         if identity!=r['id']:raise RuntimeError('Job identity changed')
     else:
         from waitress import serve
