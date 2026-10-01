@@ -32,5 +32,7 @@ assert "mels.to(self.device, dtype=torch.float32)" in (base / "models/voice_enco
 PY
 # Language helpers are omitted by the upstream ROCm requirements list.
 RUN python -m pip install -c /tmp/torch-constraints.txt librosa==0.11.0 spacy-pkuseg==1.0.1 pykakasi==2.3.0 && mkdir -p /tmp/outputs
+COPY patch_engine.py /tmp/patch_engine.py
+RUN python /tmp/patch_engine.py
 EXPOSE 8004
 CMD ["python", "server.py"]

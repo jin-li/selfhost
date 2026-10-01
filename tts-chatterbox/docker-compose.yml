@@ -1,7 +1,7 @@
 services:
   tts-chatterbox:
     build: .
-    image: local/tts-chatterbox:915ae289-rocm7.2
+    image: local/tts-chatterbox:915ae289-rocm7.2-hooks1
     container_name: tts-chatterbox
     restart: unless-stopped
     ports:
@@ -11,6 +11,7 @@ services:
       - /dev/dri
     shm_size: 4g
     mem_limit: 24g
+    memswap_limit: 24g
     environment:
       HF_HOME: /cache
       HF_HUB_DISABLE_TELEMETRY: '1'
