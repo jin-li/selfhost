@@ -73,6 +73,10 @@ The optional `web` service provides Calibre EPUB search, profile selection,
 a persistent one-at-a-time queue, optional cover-image upload, progress, pause,
 and resume. An uploaded image (up to 5 MiB) replaces EPUB artwork for that job;
 otherwise the EPUB cover is used, or a generated title card if none exists.
+Selecting a book previews its usable EPUB cover before submission. Missing covers
+show the book title and a clear fallback message. Uploaded images preview locally;
+**Remove uploaded cover** restores the EPUB preview. Previewing never queues a job
+or changes the source book.
 Uploads are normalized to JPEG, stored with job state, and included in job
 identity so retries and duplicate submissions keep the same artwork. It is a small
 custom interface around the same converter, not a separate ebook/TTS engine.

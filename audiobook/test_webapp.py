@@ -178,3 +178,34 @@ def test_real_worker_subprocess_pause_resume_and_packaging(queue):
         assert not (queue.root/'sources'/job['id']).exists()
         count=len(calls);assert queue.submit(1,'fast','en')['status']=='published';assert len(calls)==count
     finally:release.set();queue.stop();server.shutdown()
+
+
+def test_cover_preview_authenticated_and_read_only(queue):
+    import base64
+    c,h=client(queue)
+    assert c.get('/api/books/1/cover').status_code==401
+    source=queue.books/'Author/book.epub';before=webapp.runner.sha_file(source)
+    response=c.get('/api/books/1/cover',headers=h,base_url='https://test.example')
+    assert response.status_code==200
+    prefix,encoded=response.json['cover'].split(',',1)
+    assert prefix=='data:image/jpeg;base64'
+    with Image.open(io.BytesIO(base64.b64decode(encoded))) as image:
+        assert image.size==(20,30) and image.getpixel((10,10))[1]>100
+    assert webapp.runner.load_epub(source)[2] is not None
+    assert webapp.runner.sha_file(source)==before and not list(queue.records.glob('*.json'))
+    assert c.get('/api/books/999/cover',headers=h,base_url='https://test.example').status_code==400
+    with sqlite3.connect(queue.books/'metadata.db') as db:db.execute("UPDATE books SET path='../../'")
+    assert c.get('/api/books/1/cover',headers=h,base_url='https://test.example').status_code==400
+
+
+def test_cover_preview_missing_asset(queue):
+    c,h=client(queue);source=queue.books/'Author/book.epub'
+    with zipfile.ZipFile(source) as archive:
+        entries=[(item,archive.read(item)) for item in archive.infolist() if not item.filename.endswith('/cover.jpg')]
+    with zipfile.ZipFile(source,'w') as archive:
+        for item,data in entries:archive.writestr(item,data)
+    before=webapp.runner.sha_file(source)
+    response=c.get('/api/books/1/cover',headers=h,base_url='https://test.example')
+    assert response.status_code==200 and response.json=={'cover':None}
+    assert webapp.runner.load_epub(source)[2] is None
+    assert webapp.runner.sha_file(source)==before and not list(queue.records.glob('*.json'))

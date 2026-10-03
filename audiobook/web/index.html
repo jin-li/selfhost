@@ -33,6 +33,11 @@
     .selection { border:1px solid #b7dce7; background:#f1fbfd; border-radius:9px; padding:12px; margin:18px 0; }
     .selection[hidden], [hidden] { display:none!important; }
     .selection strong { display:block; }
+    .cover-preview { display:flex; gap:14px; align-items:center; margin-top:14px; }
+    .cover-art { width:104px; height:148px; flex-shrink:0; border:1px solid var(--line); border-radius:6px; background:#edf2f7; overflow:hidden; }
+    .cover-art img { width:100%; height:100%; object-fit:contain; display:block; }
+    .cover-placeholder { height:100%; display:flex; align-items:center; justify-content:center; padding:10px; text-align:center; font-size:.85rem; font-weight:650; overflow-wrap:anywhere; }
+    .cover-preview p { margin:0; }
     .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
     .notice { margin:0 0 16px; padding:10px 12px; border-radius:8px; background:#fff6ed; color:#8a3c10; border:1px solid #fed7aa; }
     .notice.error { background:#fef3f2; color:var(--danger); border-color:#fecdca; }
@@ -70,6 +75,11 @@
           <div><label for="language">Language</label><select id="language" disabled><option value="auto">Auto-detect</option></select></div>
         </div>
         <div style="margin-top:16px"><label for="cover">Cover image (optional)</label><input id="cover" type="file" accept="image/*" aria-describedby="cover-help"><span id="cover-help" class="hint">Upload an image up to 5 MiB, or leave this blank to use the EPUB cover. Books without a cover get a title card.</span></div>
+        <div id="cover-preview" class="cover-preview" hidden>
+          <div id="cover-art" class="cover-art"></div>
+          <p id="cover-status" class="hint" role="status" aria-live="polite"></p>
+        </div>
+        <button id="remove-cover" class="secondary" type="button" style="margin-top:10px" hidden>Remove uploaded cover</button>
         <div class="actions" style="margin-top:20px"><button id="convert" class="primary" type="button" disabled>Convert selected book</button></div>
       </section>
       <section class="card full" aria-labelledby="jobs-heading">
@@ -84,7 +94,60 @@
     'use strict';
     const $ = id => document.getElementById(id);
     const state = { csrf: '', books: [], selected: null, profiles: [], jobsLoaded: false };
-    let searchTimer;
+    let searchTimer, coverController, coverVersion = 0, uploadVersion = 0, previewVersion = 0;
+    let epubCover = { status:'empty', source:null, message:'' }, uploadedCover = null;
+    function renderCover() {
+      const version = ++previewVersion, book = state.selected;
+      $('cover-preview').hidden = !book;
+      $('remove-cover').hidden = !$('cover').files.length;
+      const art = $('cover-art'); art.replaceChildren();
+      if (!book) return;
+      const cover = uploadedCover || epubCover;
+      const placeholder = () => { const title = document.createElement('span'); title.className='cover-placeholder'; title.textContent=book.title || 'Untitled'; art.replaceChildren(title); };
+      placeholder();
+      if (cover.source) {
+        const img = document.createElement('img'); img.alt=`Cover for ${book.title || 'Untitled'}`;
+        img.addEventListener('error', () => {
+          if (version !== previewVersion) return;
+          cover.source=null; cover.status='error'; cover.message='Cover preview unavailable: the image could not be displayed. You can still convert this book.';
+          renderCover();
+        });
+        img.src=cover.source; art.replaceChildren(img);
+      }
+      $('cover-status').textContent=cover.message || (cover.status === 'loading' ? 'Loading EPUB cover…' : cover.source ? (uploadedCover ? 'Uploaded cover preview. Remove it to use the EPUB cover.' : 'EPUB cover preview.') : 'No usable EPUB cover. The audiobook will use a title card unless you upload an image.');
+    }
+    async function loadCover(book, version) {
+      if (coverController) coverController.abort();
+      const controller = new AbortController(); coverController=controller;
+      try {
+        const data = await request(`api/books/${encodeURIComponent(book.id)}/cover`, { signal:controller.signal });
+        if (version !== coverVersion) return;
+        if (data.cover !== null && (typeof data.cover !== 'string' || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(data.cover))) throw new Error('The server returned an unusable cover image.');
+        epubCover={ status:'ready', source:data.cover, message:'' };
+      } catch (error) {
+        if (version !== coverVersion || error.name === 'AbortError') return;
+        epubCover={ status:'error', source:null, message:`EPUB cover preview unavailable: ${error.message} You can still convert this book.` };
+      }
+      renderCover();
+    }
+    function previewUpload() {
+      const version=++uploadVersion, file=$('cover').files[0];
+      if (!file) { uploadedCover=null; renderCover(); return; }
+      uploadedCover={ status:'loading', source:null, message:'Loading uploaded cover…' }; renderCover();
+      if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+        uploadedCover={ status:'error', source:null, message:'Upload preview unavailable. Choose an image up to 5 MiB, or remove the upload to use the EPUB cover.' }; renderCover(); return;
+      }
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        if (version !== uploadVersion) return;
+        uploadedCover={ status:'ready', source:reader.result, message:'' }; renderCover();
+      });
+      reader.addEventListener('error', () => {
+        if (version !== uploadVersion) return;
+        uploadedCover={ status:'error', source:null, message:'Upload preview unavailable: the file could not be read. Try another image or remove the upload.' }; renderCover();
+      });
+      reader.readAsDataURL(file);
+    }
     function setNotice(message, error = true) { const n = $('notice'); n.textContent = message || ''; n.hidden = !message; n.className = error ? 'notice error' : 'notice'; }
     async function request(url, options = {}) {
       const response = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json', ...(options.headers || {}) }, ...options });
@@ -101,7 +164,12 @@
       $('books-empty').hidden = !(hasQuery && state.books.length === 0);
       for (const book of state.books) { const li = document.createElement('li'), button = document.createElement('button'), title = document.createElement('span'), author = document.createElement('span'); button.type='button'; button.className='book-choice'; button.setAttribute('aria-pressed', String(state.selected && state.selected.id === book.id)); title.className='book-title'; title.textContent=book.title || 'Untitled'; author.className='book-author'; author.textContent=book.author || 'Unknown author'; button.append(title, author); button.addEventListener('click', () => selectBook(book)); li.append(button); list.append(li); }
     }
-    function selectBook(book) { if (!state.selected || state.selected.id !== book.id) $('cover').value=''; state.selected = book; $('selected-title').textContent = book.title || 'Untitled'; $('selected-author').textContent = book.author || 'Unknown author'; $('selected-book').hidden=false; $('no-selection').hidden=true; $('convert').disabled = $('profile').disabled || !state.selected; renderBooks(); }
+    function selectBook(book) {
+      const changed = !state.selected || state.selected.id !== book.id;
+      if (changed) { $('cover').value=''; ++uploadVersion; uploadedCover=null; epubCover={ status:'loading', source:null, message:'' }; ++coverVersion; }
+      state.selected = book; $('selected-title').textContent = book.title || 'Untitled'; $('selected-author').textContent = book.author || 'Unknown author'; $('selected-book').hidden=false; $('no-selection').hidden=true; $('convert').disabled = $('profile').disabled || !state.selected; renderBooks(); renderCover();
+      if (changed) loadCover(book, coverVersion);
+    }
     async function loadBooks() { const q = $('search').value.trim(); $('book-summary').textContent = q ? 'Searching…' : ''; try { const data = await request('api/books?q=' + encodeURIComponent(q)); state.books = Array.isArray(data.books) ? data.books : []; $('book-summary').textContent = q ? `${data.total || state.books.length} result${(data.total || state.books.length) === 1 ? '' : 's'}${(data.total || 0) > state.books.length ? ' (showing first 100)' : ''}` : ''; renderBooks(); } catch (error) { state.books=[]; renderBooks(); setNotice(error.message); } }
     function updateLanguages() { const language = $('language'), selected = state.profiles.find(p => p.name === $('profile').value); language.replaceChildren(); option(language, 'auto', 'Auto-detect'); for (const code of (selected && Array.isArray(selected.languages) ? selected.languages : [])) option(language, code, code); }
     async function loadProfiles() { const data = await request('api/profiles'); state.profiles = Array.isArray(data.profiles) ? data.profiles : []; const profile = $('profile'); profile.replaceChildren(); for (const item of state.profiles) option(profile, item.name, item.name); if (state.profiles.some(item => item.name === 'normal')) profile.value='normal'; profile.disabled = state.profiles.length === 0; $('language').disabled = profile.disabled; updateLanguages(); $('convert').disabled = profile.disabled || !state.selected; if (data.listen_url) { $('listener-link').href=data.listen_url; $('listener').hidden=false; } }
@@ -136,6 +204,8 @@
     async function convert() { if (!state.selected) return; const button=$('convert'); button.disabled=true; setNotice(''); try { const form=new FormData(); form.append('book_id',state.selected.id); form.append('profile',$('profile').value); form.append('language',$('language').value || 'auto'); const file=$('cover').files[0]; if (file) form.append('cover',file); await request('api/jobs', { method:'POST', headers:{ 'X-CSRF-Token':state.csrf }, body:form }); setNotice('Conversion queued.', false); await loadJobs(); } catch (error) { setNotice(error.message); } finally { button.disabled = $('profile').disabled || !state.selected; } }
     async function init() { try { const session=await request('api/session'); state.csrf=session.csrf || ''; if (!state.csrf) throw new Error('Session token unavailable. Please refresh and sign in again.'); await Promise.all([loadProfiles(),loadJobs(),loadBooks()]); } catch (error) { setNotice(error.message); } }
     $('search').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer=setTimeout(loadBooks, 250); });
+    $('cover').addEventListener('change', previewUpload);
+    $('remove-cover').addEventListener('click', () => { $('cover').value=''; ++uploadVersion; uploadedCover=null; renderCover(); });
     $('profile').addEventListener('change', updateLanguages); $('convert').addEventListener('click', convert); init(); setInterval(loadJobs, 5000); setInterval(() => { for (const estimate of $('jobs').querySelectorAll('[data-finish]')) updateEstimate(estimate); }, 1000);
   })();
   </script>

@@ -1,4 +1,6 @@
 """Authenticated web queue around the existing durable conversion worker."""
+import base64
+import io
 import contextlib
 import fcntl
 import json
@@ -16,6 +18,7 @@ import time
 
 from flask import Flask, jsonify, request, session, send_from_directory
 from werkzeug.exceptions import HTTPException
+from PIL import Image
 import runner
 
 JOB_ID = re.compile(r'^[0-9a-f]{64}$')
@@ -54,14 +57,27 @@ class Queue:
             rows=[dict(x) for x in db.execute(sql+' ORDER BY b.sort LIMIT 100',args)]
         return rows,total
 
-    def submit(self, book_id, profile, language, cover=None):
-        profiles=json.loads(self.profiles.read_text())
-        if profile not in profiles: raise ValueError('Unknown profile')
+    def source_for_book(self, book_id):
         rows,_=self.catalog(book_id=book_id)
         if not rows: raise ValueError('Book has no EPUB edition')
         book=rows[0]
         source=(self.books/book['path']/(book['name']+'.epub')).resolve()
         if not source.is_relative_to(self.books.resolve()) or not source.is_file(): raise ValueError('EPUB is unavailable')
+        return book,source
+
+    def cover_preview(self, book_id):
+        _,source=self.source_for_book(book_id)
+        raw=runner.extract_cover(runner.read_epub(source))
+        if raw is None: return None
+        with Image.open(io.BytesIO(runner.normalize_cover(raw))) as image:
+            image.thumbnail((320,480), Image.Resampling.LANCZOS)
+            output=io.BytesIO();image.save(output,"JPEG",quality=85)
+        return "data:image/jpeg;base64,"+base64.b64encode(output.getvalue()).decode("ascii")
+
+    def submit(self, book_id, profile, language, cover=None):
+        profiles=json.loads(self.profiles.read_text())
+        if profile not in profiles: raise ValueError('Unknown profile')
+        book,source=self.source_for_book(book_id)
         if language=='auto': language=runner.language_for_epub(source)
         if not isinstance(language,str) or not re.fullmatch(r'[A-Za-z_-]{2,16}',language): raise ValueError('Invalid language')
         settings=runner.effective_profile(profiles[profile],language)
@@ -259,6 +275,8 @@ def create_app(queue, origin, base_path='/', require_auth=True, listen_url=''):
     def books():
         rows,total=queue.catalog(request.args.get('q',''))
         return jsonify(books=[{k:b[k] for k in ('id','title','author')} for b in rows],total=total)
+    @app.get('/api/books/<int:book_id>/cover')
+    def book_cover(book_id):return jsonify(cover=queue.cover_preview(book_id))
     @app.get('/api/profiles')
     def profiles():return jsonify(profiles=[{'name':k,'languages':v.get('languages',[])} for k,v in json.loads(queue.profiles.read_text()).items()],listen_url=listen_url)
     @app.get('/api/jobs')

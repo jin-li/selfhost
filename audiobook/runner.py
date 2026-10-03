@@ -215,7 +215,12 @@ def load_epub(path: Path, title_fallback="") -> tuple[dict, list[dict], bytes | 
                 used.add(item.get_id())
     if not chapters: raise ValueError("EPUB has no readable spine text")
     md["excluded_wrapper_ids"] = exclusions
-    cover, generated = None, False
+    return md, chapters, extract_cover(book), False
+
+
+def extract_cover(book) -> bytes | None:
+    """Select usable EPUB artwork consistently for conversion and previews."""
+    cover = None
     cover_ids = set()
     for _, attrs in book.get_metadata("OPF", "cover"):
         if isinstance(attrs, dict) and attrs.get("content"): cover_ids.add(attrs["content"])
@@ -228,7 +233,7 @@ def load_epub(path: Path, title_fallback="") -> tuple[dict, list[dict], bytes | 
                 with Image.open(io.BytesIO(raw)) as image: image.verify()
                 cover = raw; break
             except (OSError, ValueError): continue
-    return md, chapters, cover, generated
+    return cover
 
 
 def chunks(text: str, maximum: int) -> list[str]:
