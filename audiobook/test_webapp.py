@@ -131,6 +131,24 @@ def test_scheduler_restart_resumes_and_preserves_pause(queue):
     try:assert queue.read(job['id'])['status']=='paused'
     finally:queue.stop()
 
+def test_progress_api_hides_eta_when_paused_or_stalled(queue):
+    job=queue.submit(1,'fast','en');record=queue.read(job['id']);record['status']='running'
+    progress={'total_chunks':10,'completed_chunks':3,'percent':30,'phase':'synthesizing',
+              'eta_seconds':70,'eta_updated_at':time.time(), 'samples':[{'chars':100,'seconds':10}]*3}
+    path=queue.state/job['id']/'progress.json';webapp.runner.atomic_json(path,progress)
+    assert queue.present(record)['metrics']['eta_seconds']==70
+    record['status']='paused';assert queue.present(record)['metrics']['eta_seconds'] is None
+    record['status']='running';progress['eta_updated_at']-=200;webapp.runner.atomic_json(path,progress)
+    metrics=queue.present(record)['metrics'];assert metrics['eta_stale'] and metrics['eta_seconds'] is None
+    record['status']='published';metrics=queue.present(record)['metrics']
+    assert metrics['percent']==100 and metrics['phase']=='published'
+
+def test_existing_published_jobs_get_complete_progress(queue):
+    job=queue.submit(1,'fast','en');record=queue.read(job['id']);record['status']='published'
+    webapp.runner.atomic_json(queue.state/job['id']/'manifest.json',{'chapters':[{'chunks':[{},{}]},{'chunks':[{}]}]})
+    metrics=queue.present(record)['metrics']
+    assert metrics['total_chunks']==metrics['completed_chunks']==3 and metrics['percent']==100
+
 def test_real_worker_subprocess_pause_resume_and_packaging(queue):
     entered=threading.Event();release=threading.Event();calls=[]
     class Server(BaseHTTPRequestHandler):

@@ -457,24 +457,47 @@ def convert(source: Path, profile_name: str, profiles: Path, state: Path, librar
                     "status": "rendering", "chapters": []}
         atomic_json(job / "manifest.json", manifest)
         print(f"job {identity}", file=sys.stderr, flush=True)
-        for chapter in chapters:
+        plan = [(chapter, chunks(chapter["text"], int(config["max_chars"]))) for chapter in chapters]
+        checkpoint_cache = {}
+        remaining_chars = 0
+        for chapter, passages in plan:
+            for n, text in enumerate(passages, 1):
+                wav = job / "chunks" / f"{chapter['index']:04d}" / f"{n:05d}.wav"
+                try: cached = json.loads(wav.with_suffix('.json').read_text())
+                except (OSError, ValueError): cached = None
+                if cached and wav.exists() and valid_wav(wav) and cached == wav_record(wav, sha(text)):
+                    checkpoint_cache[(chapter['index'], n)] = cached
+                else: remaining_chars += len(text)
+        try: samples = json.loads((job / 'progress.json').read_text()).get('samples', [])[-20:]
+        except (OSError, ValueError): samples = []
+        total_chunks = sum(len(passages) for _, passages in plan)
+        completed_chunks = len(checkpoint_cache)
+        def save_progress(phase='synthesizing'):
+            rate = sum(sample['chars'] for sample in samples) / sum(sample['seconds'] for sample in samples) if len(samples) >= 3 else None
+            atomic_json(job / 'progress.json', {
+                'total_chunks': total_chunks, 'completed_chunks': completed_chunks,
+                'percent': 100 if phase == 'published' else min(99, 100 * completed_chunks / total_chunks),
+                'phase': phase, 'eta_seconds': remaining_chars / rate if rate and phase == 'synthesizing' else None,
+                'eta_updated_at': time.time(), 'samples': samples,
+            })
+        save_progress()
+        for chapter, passages in plan:
             rec = {"index": chapter["index"], "title": chapter["title"], "text": chapter["text"],
                    "sha256": sha(chapter["text"]), "chunks": [], "state": "pending"}
             manifest["chapters"].append(rec)
             cdir = job / "chunks" / f"{chapter['index']:04d}"; cdir.mkdir(parents=True, exist_ok=True)
-            passages = chunks(chapter["text"], int(config["max_chars"]))
             for n, text in enumerate(passages, 1):
                 print(f"job {identity} chapter {chapter['index']}/{len(chapters)} chunk {n}/{len(passages)}", file=sys.stderr, flush=True)
                 wav = cdir / f"{n:05d}.wav"; h = sha(text)
                 cres = {"index": n, "chapter_index": chapter["index"], "chapter_title": chapter["title"],
                         "text": text, "sha256": h, "wav": str(wav.relative_to(job)), "state": "pending"}
                 stamp = wav.with_suffix(".json")
-                try: cached = json.loads(stamp.read_text()) if stamp.exists() else {}
-                except (OSError, ValueError): cached = {}
-                if wav.exists() and valid_wav(wav) and cached == wav_record(wav, h):
+                cached = checkpoint_cache.get((chapter['index'], n))
+                if cached is not None:
                     cres.update(cached); cres["state"] = "done"
                 else:
                     wav.unlink(missing_ok=True); stamp.unlink(missing_ok=True)
+                    started = time.monotonic()
                     try:
                         for audio_attempt in range(3):
                             with (state / (".tts-" + sha(config["url"].rstrip("/")) + ".lock")).open("w") as backend_lock:
@@ -491,12 +514,18 @@ def convert(source: Path, profile_name: str, profiles: Path, state: Path, librar
                         raise
                     cached = wav_record(wav, h); atomic_json(stamp, cached)
                     cres.update(cached); cres["state"] = "done"
+                    completed_chunks += 1
+                    remaining_chars -= len(text)
+                    samples.append({'chars': len(text), 'seconds': max(0.001, time.monotonic() - started)})
+                    samples = samples[-20:]
+                    save_progress()
                 rec["chunks"].append(cres)
                 # Per-chunk stamp is the durable checkpoint; avoid rewriting the
                 # growing full-book manifest for every short TTS request.
             assert "".join(x["text"] for x in rec["chunks"]) == chapter["text"]
             rec["state"] = "done"; atomic_json(job / "manifest.json", manifest)
         try:
+            save_progress('packaging')
             # Stream concatenate each chapter. Never assemble PCM in Python memory.
             audio = job / "audio"; audio.mkdir(exist_ok=True)
             ff = shutil.which("ffmpeg")
@@ -538,6 +567,7 @@ def convert(source: Path, profile_name: str, profiles: Path, state: Path, librar
                 shutil.copyfileobj(src, dst); dst.flush(); os.fsync(dst.fileno())
             os.replace(part, dest); _fsync_dir(book_dir)
             manifest["status"] = "published"; manifest["library_file"] = str(dest); manifest["library_sha256"] = sha_file(dest); atomic_json(job / "manifest.json", manifest)
+            save_progress('published')
             cleanup_transient(job)
         except Exception as error:
             manifest["status"] = "failed"
