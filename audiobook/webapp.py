@@ -32,6 +32,7 @@ class Queue:
         self.active = None
         self.thread = None
         self.process = None
+        self.completed_metrics = {}
 
     def read(self, identity):
         if not JOB_ID.fullmatch(identity): raise ValueError('Invalid job ID')
@@ -107,6 +108,28 @@ class Queue:
             matches=re.findall(r'chapter (\d+/\d+) chunk (\d+/\d+)',tail)
             if matches:data['progress']='Chapter '+matches[-1][0]+' · chunk '+matches[-1][1]
         if data['status']=='published': data['progress']='Ready in the listening library'
+        data['metrics']=self.metrics(record)
+        return data
+
+    def metrics(self, record):
+        job=self.state/record['id']
+        try: progress=json.loads((job/'progress.json').read_text())
+        except (OSError,ValueError):progress={}
+        if record['status']=='published' and not progress:
+            if record['id'] not in self.completed_metrics:
+                manifest=runner._manifest(job)
+                total=sum(len(chapter.get('chunks',[])) for chapter in manifest.get('chapters',[]))
+                self.completed_metrics[record['id']]={'total_chunks':total,'completed_chunks':total}
+            progress=self.completed_metrics[record['id']]
+        data={key:progress.get(key) for key in ('total_chunks','completed_chunks','percent','phase','eta_seconds','eta_updated_at')}
+        data['eta_stale']=False
+        if record['status']=='published':data.update(percent=100,phase='published',eta_seconds=None)
+        elif record['status']!='running' or progress.get('phase')!='synthesizing':data['eta_seconds']=None
+        elif progress.get('eta_updated_at'):
+            samples=progress.get('samples',[])
+            average=sum(sample['seconds'] for sample in samples)/len(samples) if samples else 0
+            if time.time()-progress['eta_updated_at']>max(120,3*average):
+                data.update(eta_seconds=None,eta_stale=True)
         return data
 
     def jobs(self):

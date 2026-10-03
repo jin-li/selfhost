@@ -137,3 +137,42 @@ def test_uploaded_cover_overrides_embedded_art(tmp_path, monkeypatch):
     with Image.open(state/identity/'cover.jpg') as image:
         assert image.getpixel((20,20))[0]>200
     assert r.sha_file(source)==manifest['source_sha256']
+
+
+def test_progress_counts_resume_timing_and_packaging(tmp_path, monkeypatch):
+    source=tmp_path/'book.epub';book(source)
+    profiles=tmp_path/'profiles.json'
+    profiles.write_text(json.dumps({'fast':{'url':'http://local/v1','model':'test','voice':'test','max_chars':10}}))
+    state=tmp_path/'jobs';library=tmp_path/'library';clock=[100.0];calls=[]
+    monkeypatch.setattr(r.time,'monotonic',lambda:clock[0])
+    def synthesize(*args):
+        calls.append(args[2]);clock[0]+=10
+        if len(calls)==4:raise RuntimeError('interrupted')
+        return pcm()
+    monkeypatch.setattr(r,'tts',synthesize)
+    with pytest.raises(RuntimeError,match='interrupted'):r.convert(source,'fast',profiles,state,library,'en')
+    job=next(path for path in state.iterdir() if (path/'manifest.json').exists())
+    progress=json.loads((job/'progress.json').read_text())
+    assert progress['completed_chunks']==3 and progress['total_chunks']>3
+    assert progress['eta_seconds']>0 and progress['percent']<100
+    assert [sample['seconds'] for sample in progress['samples']]==[10,10,10]
+    clock[0]+=86400  # A day paused must not become a synthesis timing sample.
+    _,chapters,_,_=r.load_epub(source)
+    pending=[text for chapter in chapters for text in r.chunks(chapter['text'],10)][3:]
+    def resumed(*args):
+        assert args[2]==pending.pop(0)
+        assert json.loads((job/'progress.json').read_text())['completed_chunks']>=3
+        clock[0]+=10;return pcm()
+    monkeypatch.setattr(r,'tts',resumed)
+    import m4b
+    package=m4b.build_m4b
+    def checked_package(*args,**kwargs):
+        current=json.loads((job/'progress.json').read_text())
+        assert current['phase']=='packaging' and current['percent']==99 and current['eta_seconds'] is None
+        return package(*args,**kwargs)
+    monkeypatch.setattr(m4b,'build_m4b',checked_package)
+    assert r.convert(source,'fast',profiles,state,library,'en')==job.name
+    final=json.loads((job/'progress.json').read_text())
+    assert final['completed_chunks']==final['total_chunks'] and final['percent']==100
+    assert final['phase']=='published' and all(sample['seconds']==10 for sample in final['samples'])
+    assert not pending

@@ -79,6 +79,14 @@ custom interface around the same converter, not a separate ebook/TTS engine.
 Read-only `metadata.db` queries identify books; API requests select a book ID,
 never an arbitrary filesystem path. Closing the browser does not stop a job.
 
+Each job shows a progress bar with completed/total validated TTS chunks. Estimates
+start after three successful chunks and use the latest 20 character-throughput
+samples; cached chunks and paused time do not inflate synthesis time. Estimates
+are approximate and exclude final packaging, shown as a separate stage capped at
+99% until publication. Paused/failed jobs hide completion times, and stalled jobs
+hide stale estimates. Small `progress.json` checkpoints persist counters/timing
+across resume; old published jobs also show 100% without reconversion.
+
 Set `WEB_ORIGIN` to the external origin, `WEB_BASE_PATH` to its path prefix,
 and `LISTEN_URL` to the audiobook server. Place it behind an authenticating
 reverse proxy that supplies `Remote-User`, strips the path prefix, and redirects
