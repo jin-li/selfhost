@@ -1,0 +1,48 @@
+schema: 1
+service: strata
+projectName: strata
+compose:
+  root: selfhost/strata
+  base: [docker-compose.yml]
+  hostOverlay: local/{host}/strata/compose.{host}.yaml
+environment:
+  BIND_ADDRESS:
+    source: host.services.strata.bindAddress
+    required: true
+    type: string
+    secret: false
+  DATA_DIR:
+    source: host.services.strata.dataPath
+    required: true
+    type: string
+    secret: false
+  STRATA_IMAGE:
+    source: host.services.strata.image
+    required: true
+    type: string
+    secret: false
+  STRATA_MODEL:
+    source: host.services.strata.model
+    required: true
+    type: string
+    secret: false
+  STRATA_CONTEXT:
+    source: host.services.strata.context
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: true
+data:
+  declarations:
+    - name: models-and-config
+      source: host.services.strata.dataPath
+      containerPath: /data
+      backupNotes: Model weights are replaceable (re-downloaded on next start); only the installed config under config/ need be kept for a fast restore.
+validation:
+  healthChecks: []

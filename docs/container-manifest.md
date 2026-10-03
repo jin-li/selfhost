@@ -12,18 +12,18 @@ otherwise; no path may escape it (`..` segments are rejected).
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `schema` | `1` | Manifest format version. |
-| `service` | name | Canonical service name; keys the host inventory and runtime tree. |
-| `projectName` | name | Docker Compose project name (container prefix). |
+| `autostart` | boolean | Whether the host starts the service automatically. |
+| `compatibilityPaths` | paths | Legacy configuration locations a migration must clear or migrate; the renderer fails if they still exist. |
 | `compose` | object | Which files build the deployment (below). |
+| `data` | object | `{ declarations: [...] }` — persistent state (below). |
 | `environment` | map | Environment variables for the containers (below). |
 | `files` | map | Generated files rendered into the runtime tree (below). |
 | `networks` | object | `{ required: [names] }` — networks the service must join. |
-| `data` | object | `{ declarations: [...] }` — persistent state (below). |
-| `validation` | object | `{ healthChecks: [...] }` — how `doctor` verifies the service. |
 | `placement` | object | Where and how the service may run (below). |
-| `autostart` | boolean | Whether the host starts the service automatically. |
-| `compatibilityPaths` | paths | Legacy configuration locations a migration must clear or migrate; the renderer fails if they still exist. |
+| `projectName` | name | Docker Compose project name (container prefix). |
+| `schema` | `1` | Manifest format version. |
+| `service` | name | Canonical service name; keys the host inventory and runtime tree. |
+| `validation` | object | `{ healthChecks: [...] }` — how `doctor` verifies the service. |
 
 Names match `^[A-Za-z0-9][A-Za-z0-9_.-]*$`.
 
@@ -38,7 +38,7 @@ compose:
 
 - `root` — directory the deployment runs from.
 - `base` — portable Compose file(s) in this repository, merged in order.
-- `hostOverlay` — optional per-host override file in the companion `containers`
+- `hostOverlay` — optional per-host override file in the deployment
   repository; `{host}` is replaced with the target host name. `null` means the
   service needs no host-specific Compose changes.
 

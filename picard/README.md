@@ -19,8 +19,7 @@ services:
       - ${FONT_DIR}:/usr/share/fonts/host-cjk:ro
 ```
 
-Declare `FONT_DIR` in the service manifest and host inventory, and add the
-mount through a host overlay (`compose.hostOverlay`), as
-`local/t460s/picard/compose.t460s.yaml` does. Fontconfig picks the mounted
-fonts up without a cache rebuild; verify with
+Set `FONT_DIR` in your local environment and add this mount in a Compose
+override file. Include that file in each Compose invocation. Fontconfig picks
+the mounted fonts up without a cache rebuild; verify with
 `docker exec picard fc-list :lang=zh`.

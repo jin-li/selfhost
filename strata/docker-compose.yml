@@ -1,0 +1,26 @@
+services:
+  strata:
+    image: ${STRATA_IMAGE:?pinned Strata image required}
+    container_name: strata
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:?private bind address required}:18006:8080"
+    environment:
+      FAMILY: qwen
+      MODEL: ${STRATA_MODEL:-Q2_0}
+      CONTEXT: ${STRATA_CONTEXT:-32768}
+      VISION: 'no'
+      HOST: 0.0.0.0
+      PORT: '8080'
+      LOW_RAM: auto
+      # One-shot: set to 1 via the env file (not the committed host config)
+      # to reconfigure an already-installed model's context/vision/KV/host/
+      # api_key, then recreate once more without it.
+      REINSTALL: ${REINSTALL:-0}
+    volumes:
+      - ${DATA_DIR}:/data
+    ulimits:
+      memlock: -1
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

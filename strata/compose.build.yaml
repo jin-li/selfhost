@@ -1,0 +1,8 @@
+services:
+  strata:
+    build:
+      context: .
+      network: host
+      args:
+        CUDA_ARCHITECTURES: '120'
+        BUILD_VISION: '0'

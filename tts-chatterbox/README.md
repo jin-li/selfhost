@@ -2,7 +2,7 @@
 
 This stack adapts the upstream
 [Chatterbox-TTS-Server](https://github.com/devnen/Chatterbox-TTS-Server)
-Strix Halo recipe to AMD's PyTorch ROCm base. Server and engine Git revisions
+for AMD's PyTorch ROCm base. Server and engine Git revisions
 and the multilingual model snapshot are pinned in `Dockerfile`. Model configuration selects Multilingual, not Turbo.
 The upstream dtype corrections are checked and applied during the build.
 Chinese and Japanese tokenizer helpers are installed explicitly, with librosa

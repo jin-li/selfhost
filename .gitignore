@@ -7,4 +7,4 @@ users.yml
 dynamic/
 data/
 .vscode/
-*bak
+*bak__pycache__/

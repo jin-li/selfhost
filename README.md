@@ -1,63 +1,93 @@
-# Self-hosted Docker Apps
+# Self-hosted Docker apps
 
-This repository contains portable Docker Compose stacks for self-hosted
-applications. Each application has its own directory with a
-`docker-compose.yml` base file, any example configuration it needs, and — where
-the stack is deployment-managed — a `container.yaml` service manifest.
+Portable Docker Compose stacks, example configuration, and optional service
+manifests. Each stack has its own prerequisites; reverse-proxy stacks can use
+Traefik and Cloudflare Tunnel, while local inference stacks need the appropriate
+GPU runtime. An external deployment renderer is not required for Compose usage.
 
-The stacks use Cloudflare Tunnel and Traefik. With a domain name hosted on
-Cloudflare you can reach these applications from anywhere without exposing your
-home network.
+## Table of contents
 
-## Directory layout
+- [Stack index](#stack-index)
+- [Manual deployment](#manual-deployment)
+- [Service manifests](#service-manifests)
+- [Contributing](#contributing)
 
-```text
-<service>/
-├── container.yaml        # service manifest (schema 1), where present
-├── docker-compose.yml    # portable Compose base
-└── config.example.*      # configuration templates (no real values)
+## Stack index
+
+Entries link to a service guide when one exists, or to its stack directory.
+Available stacks are not a list of services deployed by any particular operator.
+
+| Stack / guide | Purpose | Definition |
+| --- | --- | --- |
+| [audiobook](audiobook/README.md) | EPUB conversion and a resumable web queue | [Compose](audiobook/docker-compose.yml) |
+| [audiobookshelf](audiobookshelf/README.md) | Audiobook and podcast library server | [Compose](audiobookshelf/docker-compose.yml) |
+| [authelia](authelia/) | Authentication gateway | [Compose](authelia/docker-compose.yml) |
+| [calibre](calibre/) | Calibre-Web ebook library | [Compose](calibre/docker-compose.yml) |
+| [chevereto](chevereto/) | Image hosting | [Compose](chevereto/docker-compose.yml) |
+| [cloudflared](cloudflared/README.md) | Cloudflare Tunnel connector | [Compose](cloudflared/docker-compose.yml) |
+| [ddns](ddns/) | Dynamic DNS updater | [Compose](ddns/docker-compose.yml) |
+| [feishin](feishin/README.md) | Browser music client | [Compose](feishin/docker-compose.yml) |
+| [frankmd](frankmd/) | Markdown editor | [Compose](frankmd/docker-compose.yml) |
+| [gitlab](gitlab/) | GitLab development platform | [Compose](gitlab/docker-compose.yml) |
+| [headscale](headscale/README.md) | Tailscale-compatible control server and Headplane | [Compose](headscale/docker-compose.yml) |
+| [immich](immich/) | Photo and video library | [Compose](immich/docker-compose.yml) |
+| [jellyfin](jellyfin/) | Media library and streaming | [Compose](jellyfin/docker-compose.yml) |
+| [label-studio](label-studio/) | Data labeling with PostgreSQL | [Compose](label-studio/docker-compose.yml) |
+| [navidrome](navidrome/) | Music library server | [Compose](navidrome/docker-compose.yml) |
+| [nextcloud](nextcloud/) | File sync and collaboration | [Compose](nextcloud/docker-compose.yml) |
+| [ollama](ollama/) | Local model inference | [Compose](ollama/docker-compose.yml) |
+| [open-webui](open-webui/) | Browser interface for AI backends | [Compose](open-webui/docker-compose.yml) |
+| [picard](picard/README.md) | MusicBrainz Picard browser desktop | [Compose](picard/docker-compose.yml) |
+| [portainer](portainer/) | Container management | [Compose](portainer/docker-compose.yml) |
+| [portainer-edge-agent](portainer-edge-agent/) | Portainer edge agent | [Compose](portainer-edge-agent/docker-compose.yml) |
+| [qbittorrent](qbittorrent/README.md) | Torrent client | [Compose](qbittorrent/docker-compose.yml) |
+| [searxng](searxng/) | Metasearch engine | [Compose](searxng/docker-compose.yml) |
+| [strata](strata/README.md) | Source-built Qwen model inference | [Compose](strata/docker-compose.yml) |
+| [traefik](traefik/README.md) | Reverse proxy and TLS | [Compose](traefik/docker-compose.yml) |
+| [tts-chatterbox](tts-chatterbox/README.md) | Multilingual ROCm speech API | [Compose](tts-chatterbox/docker-compose.yml) |
+| [tts-qwen](tts-qwen/README.md) | Qwen3-TTS speech API | [Compose](tts-qwen/docker-compose.yml) |
+| [ttyd](ttyd/) | Terminal in a browser | [Compose](ttyd/docker-compose.yml) |
+| [vaultwarden](vaultwarden/README.md) | Bitwarden-compatible vault server | [Compose](vaultwarden/docker-compose.yml) |
+| [vllm](vllm/) | GPU model serving | [Compose](vllm/docker-compose.yml) |
+| [wud](wud/README.md) | Container image update dashboard | [Compose](wud/docker-compose.yml) |
+
+## Manual deployment
+
+```bash
+git clone https://github.com/jin-li/selfhost.git
+cd selfhost/<service>
 ```
 
-Only templates and examples are committed. Generated configuration, `.env`
-files, credentials, and application data stay out of the repository (see
-`.gitignore`).
+Read the service guide, copy its example configuration where provided, and
+set your own paths, credentials, network names, and bind addresses. Inspect
+all required variables and mounts before running:
+
+```bash
+docker compose config --quiet
+docker compose up -d
+docker compose ps
+```
+
+Use the same environment and override files for subsequent commands. Keep
+credentials, generated environment files, and persistent application state
+outside Git. For stateful stacks, back up databases and volumes before updates.
+
+Some stacks require explicit build or GPU overrides; their guides provide the
+matching commands. Create required external networks before deploying proxy
+stacks. Cloudflare Tunnel requires your own account and tunnel configuration;
+local-only services do not require a domain or tunnel.
 
 ## Service manifests
 
-A `container.yaml` manifest (schema 1) declares everything a deployment
-renderer needs: Compose base files and optional host overlay, environment
-variables and their sources, generated files with modes, required networks,
-persistent-data declarations with backup notes, health checks, allowed hosts
-and placement mode, and legacy compatibility paths. See the
-[manifest reference](docs/container-manifest.md) for the full format.
+A `container.yaml` file is optional integration metadata for deployment tooling.
+It describes Compose files, inputs, generated files, persistent state, health
+checks, and placement. See the [manifest reference](docs/container-manifest.md).
+Manifests do not start or stop services.
 
-Manifests are optional integration metadata for deployment tooling. Private
-application definitions and installation-specific configuration belong in the
-operator's own repository, outside this public collection. No deployment
-renderer is required for ordinary Compose usage.
+## Contributing
 
-## Manual usage
-
-Deploy a stack directly:
-
-1. **Preparation**: run Docker in rootless mode if your distro supports it
-   ([Docker documentation](https://docs.docker.com/engine/security/rootless/))
-   and host your domain on Cloudflare.
-
-2. **Clone the repository**:
-
-   ```bash
-   git clone https://github.com/jin-li/selfhost.git
-   ```
-
-3. **Create configuration** from the `*.example` templates in the service
-   directory (environment file, tunnel credentials, routes).
-
-4. **Set up the reverse proxy**:
-
-   a. Cloudflare Tunnel — ingress routes for the services you expose.
-   b. Traefik — dynamic route files; a shared middleware adds the
-      `X-Forwarded-Proto: https` header so applications behind Traefik see the
-      original request protocol.
-
-5. **Deploy** with `docker compose up -d`.
+Keep Compose bases, guides, and examples portable. Use generic domains, paths,
+and host labels. Do not add real host placement, user paths, tunnel identifiers,
+network topology, credentials, or links to private deployment repositories.
+Installation-specific overlays and operator runbooks belong outside this public
+collection. Keep this stack index alphabetized when adding a service.

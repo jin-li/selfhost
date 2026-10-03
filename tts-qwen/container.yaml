@@ -26,6 +26,24 @@ environment:
     required: true
     type: string
     secret: false
+  QWEN_LAZY_LOAD:
+    source: host.services.tts-qwen.lazyLoad
+    optional: true
+    default: '0'
+    type: string
+    secret: false
+  QWEN_IDLE_UNLOAD_S:
+    source: host.services.tts-qwen.idleUnloadS
+    optional: true
+    default: '0'
+    type: string
+    secret: false
+  QWEN_MIN_FREE_VRAM_MIB:
+    source: host.services.tts-qwen.minFreeVramMib
+    optional: true
+    default: '0'
+    type: string
+    secret: false
 files: {}
 networks:
   required: []

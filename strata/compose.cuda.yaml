@@ -1,0 +1,5 @@
+# Standard NVIDIA Container Toolkit deployment. Host-specific driver injection
+# (no toolkit present) requires an operator-supplied Compose override.
+services:
+  strata:
+    gpus: all
