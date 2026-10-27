@@ -1,0 +1,34 @@
+services:
+  tts-fish:
+    build: .
+    image: local/tts-fish:bdd39477-rocm7.2-eager2
+    container_name: tts-fish
+    restart: 'no'
+    ports:
+      - "${BIND_ADDRESS:?private bind address required}:18008:8008"
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    shm_size: 4g
+    mem_limit: 32g
+    memswap_limit: 32g
+    environment:
+      HF_HOME: /cache
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      FISH_PRIVATE_EVALUATION: noncommercial
+      MIOPEN_FIND_MODE: FAST
+      MIOPEN_USER_DB_PATH: /cache/miopen/db
+      MIOPEN_CUSTOM_CACHE_DIR: /cache/miopen/kernels
+    command: [sh, -c, 'mkdir -p /cache/miopen/db /cache/miopen/kernels && exec python server.py']
+    volumes:
+      - ${CACHE_DIR:?model cache required}:/cache
+      - ${VOICES_DIR:?synthetic references required}:/voices:ro
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request,json; d=json.load(urllib.request.urlopen('http://127.0.0.1:8008/health')); assert d['loaded'] and d['backend']=='rocm'"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 10m
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

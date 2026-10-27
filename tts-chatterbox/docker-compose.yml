@@ -1,9 +1,10 @@
 services:
   tts-chatterbox:
     build: .
-    image: local/tts-chatterbox:915ae289-rocm7.2-hooks1
+    image: local/tts-chatterbox:915ae289-rocm7.2-recycle1
     container_name: tts-chatterbox
     restart: unless-stopped
+    stop_grace_period: 45s
     ports:
       - "${BIND_ADDRESS:?private bind address required}:18004:8004"
     devices:
@@ -21,7 +22,7 @@ services:
       - ${CACHE_DIR}/pkuseg:/root/.pkuseg
       - ./server-config.yaml:/app/config.yaml:ro
     healthcheck:
-      test: [CMD, python, -c, "import urllib.request,json; d=json.load(urllib.request.urlopen('http://127.0.0.1:8004/api/model-info')); assert d['loaded'] and d['type']=='multilingual' and d['device']=='cuda'"]
+      test: [CMD, python, -c, "import urllib.request,json; d=json.load(urllib.request.urlopen('http://127.0.0.1:8004/api/model-info')); assert d['loaded'] is False or (d['loaded'] is True and d['type']=='multilingual' and d['device']=='cuda')"]
       interval: 60s
       timeout: 10s
       retries: 5

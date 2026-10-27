@@ -34,5 +34,9 @@ PY
 RUN python -m pip install -c /tmp/torch-constraints.txt librosa==0.11.0 spacy-pkuseg==1.0.1 pykakasi==2.3.0 && mkdir -p /tmp/outputs
 COPY patch_engine.py /tmp/patch_engine.py
 RUN python /tmp/patch_engine.py
+COPY lifecycle.py /app/lifecycle.py
+COPY tts_runtime.py /app/tts_runtime.py
+COPY patch_lifecycle.py /tmp/patch_lifecycle.py
+RUN python /tmp/patch_lifecycle.py
 EXPOSE 8004
-CMD ["python", "server.py"]
+CMD ["python", "/app/tts_runtime.py", "--app", "server:app", "--port", "8004"]

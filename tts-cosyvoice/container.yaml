@@ -1,0 +1,32 @@
+schema: 1
+service: tts-cosyvoice
+projectName: tts-cosyvoice
+compose:
+  root: selfhost/tts-cosyvoice
+  base: [docker-compose.yml]
+environment:
+  BIND_ADDRESS:
+    source: host.services.tts-cosyvoice.bindAddress
+    required: true
+    type: string
+    secret: false
+  CACHE_DIR:
+    source: host.services.tts-cosyvoice.cachePath
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: true
+data:
+  declarations:
+    - name: model-and-voice-cache
+      source: host.services.tts-cosyvoice.cachePath
+      containerPath: /cache
+      backupNotes: Model weights are replaceable; back up custom voice references and transcripts.
+validation:
+  healthChecks: []

@@ -45,6 +45,8 @@ Available stacks are not a list of services deployed by any particular operator.
 | [strata](strata/README.md) | Source-built Qwen model inference | [Compose](strata/docker-compose.yml) |
 | [traefik](traefik/README.md) | Reverse proxy and TLS | [Compose](traefik/docker-compose.yml) |
 | [tts-chatterbox](tts-chatterbox/README.md) | Multilingual ROCm speech API | [Compose](tts-chatterbox/docker-compose.yml) |
+| [tts-cosyvoice](tts-cosyvoice/README.md) | CosyVoice3 private ROCm speech API | [Compose](tts-cosyvoice/docker-compose.yml) |
+| [tts-fish](tts-fish/README.md) | Fish S2 Pro private noncommercial audition | [Compose](tts-fish/docker-compose.yml) |
 | [tts-qwen](tts-qwen/README.md) | Qwen3-TTS speech API | [Compose](tts-qwen/docker-compose.yml) |
 | [ttyd](ttyd/) | Terminal in a browser | [Compose](ttyd/docker-compose.yml) |
 | [vaultwarden](vaultwarden/README.md) | Bitwarden-compatible vault server | [Compose](vaultwarden/docker-compose.yml) |

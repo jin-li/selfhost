@@ -1,0 +1,31 @@
+services:
+  tts-cosyvoice:
+    build: .
+    image: local/tts-cosyvoice:074ca6dc-rocm7.2-recycle1
+    container_name: tts-cosyvoice
+    restart: unless-stopped
+    stop_grace_period: 45s
+    ports:
+      - "${BIND_ADDRESS:?private bind address required}:18007:8007"
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    shm_size: 4g
+    mem_limit: 24g
+    memswap_limit: 24g
+    environment:
+      HF_HOME: /cache/huggingface
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DISABLE_XET: '1'
+      OMP_NUM_THREADS: '4'
+    volumes:
+      - ${CACHE_DIR:?cache directory required}:/cache
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request,json; d=json.load(urllib.request.urlopen('http://127.0.0.1:8007/health')); assert d['ready'] and d['runtime']=='rocm' and d['device']=='cuda'"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 20m
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

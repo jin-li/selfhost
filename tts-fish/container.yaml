@@ -1,0 +1,41 @@
+schema: 1
+service: tts-fish
+projectName: tts-fish
+compose:
+  root: selfhost/tts-fish
+  base: [docker-compose.yml]
+environment:
+  BIND_ADDRESS:
+    source: host.services.tts-fish.bindAddress
+    required: true
+    type: string
+    secret: false
+  CACHE_DIR:
+    source: host.services.tts-fish.cachePath
+    required: true
+    type: string
+    secret: false
+  VOICES_DIR:
+    source: host.services.tts-fish.voicesPath
+    required: true
+    type: string
+    secret: false
+files: {}
+networks:
+  required: []
+placement:
+  allowedHosts: ["*"]
+  mode: singleton
+autostart: false
+data:
+  declarations:
+    - name: model-cache
+      source: host.services.tts-fish.cachePath
+      containerPath: /cache
+      backupNotes: Re-download pinned model revision; private noncommercial evaluation only.
+    - name: synthetic-reference-voices
+      source: host.services.tts-fish.voicesPath
+      containerPath: /voices
+      backupNotes: Retain synthetic audio and matching transcripts outside Git.
+validation:
+  healthChecks: []
