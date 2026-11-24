@@ -20,7 +20,7 @@ services:
       - wud.watch=false
   
   app:
-    image: nextcloud:33.0.2
+    image: nextcloud:34.0.6
     container_name: nextcloud
     networks:
       - nextcloud_network
