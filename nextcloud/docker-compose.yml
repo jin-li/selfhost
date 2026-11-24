@@ -44,6 +44,29 @@ services:
       - wud.tag.exclude=^v?\d+\.\d+\.0$$
       - wud.watch.delay=14d
 
+  # Runs Nextcloud background jobs (cron.php every 5 minutes as www-data).
+  # Keep the image tag identical to the app service.
+  cron:
+    image: nextcloud:34.0.6
+    container_name: nextcloud-cron
+    entrypoint: /cron.sh
+    networks:
+      - nextcloud_network
+    depends_on:
+      - mariadb
+      - app
+    volumes:
+      - ${APP_DIR}/app:/var/www/html
+      - ${APP_DIR}/app/config:/var/www/html/config
+      - ${APP_DIR}/app/custom_apps:/var/www/html/custom_apps
+      - ${APP_DIR}/app/data:/var/www/html/data
+      - ${APP_DIR}/app/themes:/var/www/html/themes
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    labels:
+      # Updated together with the app service.
+      - wud.watch=false
+
 networks:
   nextcloud_network:
   traefik-net:
