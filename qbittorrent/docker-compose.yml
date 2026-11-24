@@ -1,10 +1,13 @@
 services:
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:5.2.3
+    image: ghcr.io/linuxserver/qbittorrent:5.2.3
     container_name: qbittorrent
     network_mode: host
     restart: unless-stopped
     stop_grace_period: 30s
+    labels:
+      # Plain release tags only; excludes -ls builds and legacy tags.
+      - wud.tag.include=^\d\.\d+\.\d+$$
     security_opt:
       - no-new-privileges:true
     environment:

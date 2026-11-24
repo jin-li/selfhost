@@ -19,6 +19,9 @@ services:
     # Or build locally:
     # build: .
     container_name: frankmd
+    labels:
+      # The image is published only as a rolling tag; watch its digest.
+      - wud.watch.digest=true
     restart: unless-stopped
     # Run as host user for proper volume permissions
     user: "${UID:-1000}:${GID:-1000}"

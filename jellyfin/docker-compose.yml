@@ -2,7 +2,7 @@
 version: "2.1"
 services:
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:10.11.0
+    image: ghcr.io/linuxserver/jellyfin:10.11.0
     container_name: jellyfin
     environment:
       - PUID=1000
@@ -20,7 +20,8 @@ services:
           - jellyfin
     restart: unless-stopped
     labels:
-      - wud.tag.include=^(\d+\.\d+)\.\d+$$ => $$1
+      # Plain release tags only; excludes -ls builds and legacy date tags.
+      - wud.tag.include=^1\d\.\d+\.\d+$$
 
 networks:
   traefik-net:
