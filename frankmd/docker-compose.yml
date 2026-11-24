@@ -15,13 +15,12 @@
 
 services:
   frankmd:
-    image: akitaonrails/frankmd:latest
+    image: akitaonrails/frankmd:1.16.0
     # Or build locally:
     # build: .
     container_name: frankmd
     labels:
-      # The image is published only as a rolling tag; watch its digest.
-      - wud.watch.digest=true
+      - wud.tag.include=^\d+\.\d+\.\d+$$
     restart: unless-stopped
     # Run as host user for proper volume permissions
     user: "${UID:-1000}:${GID:-1000}"

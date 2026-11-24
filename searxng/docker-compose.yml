@@ -3,11 +3,11 @@ version: '3.8'
 services:
   searxng:
     container_name: searxng
-    image: docker.io/searxng/searxng:latest
+    image: docker.io/searxng/searxng:2026.3.18-3810dc9d1
     restart: unless-stopped
     labels:
-      # The image is published only as a rolling tag; watch its digest.
-      - wud.watch.digest=true
+      # Releases are tagged YYYY.M.D-<commit>.
+      - wud.tag.include=^\d{4}\.\d{1,2}\.\d{1,2}-[0-9a-f]+$$
     volumes:
       - ./searxng:/etc/searxng:ro
       - ./searxng_data:/var/cache/searxng:rw
