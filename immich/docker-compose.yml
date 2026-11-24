@@ -32,6 +32,8 @@ services:
       - redis
       - database
     restart: always
+    labels:
+      - wud.watch.delay=14d
     healthcheck:
       disable: false
 

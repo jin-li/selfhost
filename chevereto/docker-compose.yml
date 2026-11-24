@@ -41,7 +41,6 @@ services:
       CHEVERETO_HTTPS: 0
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
 
 networks:
   chevereto_network:

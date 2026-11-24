@@ -13,7 +13,6 @@ services:
       EDGE_POLL_INTERVAL: ${EDGE_POLL_INTERVAL}
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

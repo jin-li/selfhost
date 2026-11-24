@@ -28,7 +28,6 @@ services:
       ${MODEL_PARAMETERS}
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^v(\d+\.\d+)\.\d+$$ => $$1
     networks:
       traefik-net:
         aliases:

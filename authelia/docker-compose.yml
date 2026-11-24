@@ -13,7 +13,7 @@ services:
       - TZ=${TZ}
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
+      - wud.watch.delay=14d
     networks:
       traefik-net:
         aliases:

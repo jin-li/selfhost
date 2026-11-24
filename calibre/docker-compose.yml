@@ -18,8 +18,8 @@ services:
         aliases:
           - calibre-web
     labels:
-      - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
+      # Calibre-Web is on 0.x; the repository also holds stray 2021 tags such as 5.33.2.
+      - wud.tag.include=^0\.\d+\.\d+$$
 
 networks:
   traefik-net:

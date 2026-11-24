@@ -8,9 +8,10 @@ services:
     environment:
       - WUD_AUTH_BASIC_ADMIN_USER=${WUD_AUTH_BASIC_ADMIN_USER}
       - WUD_AUTH_BASIC_ADMIN_HASH=${WUD_AUTH_BASIC_ADMIN_HASH}
+      # Soak period: report a release only after it is this old.
+      - WUD_WATCHER_LOCAL_DELAY=${WUD_WATCHER_DELAY:-7d}
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
     networks:
       - traefik-net
 

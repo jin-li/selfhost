@@ -20,7 +20,7 @@ services:
       - wud.watch=false
   
   app:
-    image: nextcloud:33.0
+    image: nextcloud:33.0.2
     container_name: nextcloud
     networks:
       - nextcloud_network
@@ -40,7 +40,9 @@ services:
     restart: unless-stopped
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
-      - wud.tag.transform=^(\d+\.\d+)\.\d+$$ => $$1
+      # Skip fresh X.Y.0 lines; take patches of the current line first.
+      - wud.tag.exclude=^v?\d+\.\d+\.0$$
+      - wud.watch.delay=14d
 
 networks:
   nextcloud_network:

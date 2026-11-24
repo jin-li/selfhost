@@ -27,7 +27,9 @@ services:
     restart: always
     labels:
       - wud.tag.include=^v\d+\.\d+\.\d+$$
-      - wud.tag.transform=^v(\d+\.\d+)\.\d+$$ => $$1
+      # Skip fresh X.Y.0 lines; take patches of the current line first.
+      - wud.tag.exclude=^v?\d+\.\d+\.0$$
+      - wud.watch.delay=14d
     networks:
       - traefik-net
 
