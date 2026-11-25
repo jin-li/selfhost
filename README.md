@@ -30,6 +30,7 @@ Available stacks are not a list of services deployed by any particular operator.
 | [frankmd](frankmd/) | Markdown editor | [Compose](frankmd/docker-compose.yml) |
 | [gitlab](gitlab/) | GitLab development platform | [Compose](gitlab/docker-compose.yml) |
 | [headscale](headscale/README.md) | Tailscale-compatible control server and Headplane | [Compose](headscale/docker-compose.yml) |
+| [ignis](ignis/README.md) | Browser-based Obsidian server | [Compose](ignis/docker-compose.yml) |
 | [immich](immich/) | Photo and video library | [Compose](immich/docker-compose.yml) |
 | [jellyfin](jellyfin/) | Media library and streaming | [Compose](jellyfin/docker-compose.yml) |
 | [label-studio](label-studio/) | Data labeling with PostgreSQL | [Compose](label-studio/docker-compose.yml) |

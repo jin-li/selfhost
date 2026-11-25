@@ -1,0 +1,68 @@
+schema: 1
+service: ignis
+projectName: ignis
+compose:
+  root: selfhost/ignis
+  base:
+    - docker-compose.yml
+  hostOverlay: null
+environment:
+  VAULTS_DIR:
+    source: host.services.ignis.vaultsPath
+    required: true
+    type: string
+    secret: false
+  DATA_DIR:
+    source: host.services.ignis.dataPath
+    required: true
+    type: string
+    secret: false
+  PUID:
+    source: host.services.ignis.puid
+    optional: true
+    default: 1000
+    type: integer
+    secret: false
+  PGID:
+    source: host.services.ignis.pgid
+    optional: true
+    default: 1000
+    type: integer
+    secret: false
+  TZ:
+    source: host.timezone
+    required: true
+    type: string
+    secret: false
+  WS_ORIGINS:
+    source: host.services.ignis.wsOrigins
+    optional: true
+    default: ""
+    type: string
+    secret: false
+files: {}
+networks:
+  required:
+    - traefik-net
+data:
+  declarations:
+    - name: ignis-vaults
+      source: host.services.ignis.vaultsPath
+      containerPath: /vaults
+      backupNotes: Stop Ignis before copying vaults when consistency with an active sync client is required.
+    - name: ignis-data
+      source: host.services.ignis.dataPath
+      containerPath: /app/data
+      backupNotes: Stop Ignis before copying server settings and state; the obsidian-app named volume caches downloadable Obsidian assets.
+validation:
+  healthChecks:
+    - name: ignis-version
+      http:
+        url: http://127.0.0.1:8080/api/version
+        expectedStatuses: [200]
+placement:
+  allowedHosts:
+    - "*"
+  mode: singleton
+autostart: true
+compatibilityPaths: []

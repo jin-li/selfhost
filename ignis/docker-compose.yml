@@ -1,0 +1,38 @@
+services:
+  ignis:
+    image: nobbe/ignis:0.9.0
+    container_name: ignis
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-UTC}
+      WS_ORIGINS: ${WS_ORIGINS:-}
+    volumes:
+      - ${VAULTS_DIR:-./vaults}:/vaults
+      - ${DATA_DIR:-./data}:/app/data
+      - obsidian-app:/app/obsidian-app
+    networks:
+      traefik-net:
+        aliases:
+          - ignis
+    labels:
+      - wud.tag.include=^\d+\.\d+\.\d+$$
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://127.0.0.1:8080/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  obsidian-app:
+
+networks:
+  traefik-net:
+    external: true
