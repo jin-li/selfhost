@@ -1,7 +1,6 @@
-version: '3.5'
 services:
   headscale:
-    image: headscale/headscale:v0.26
+    image: headscale/headscale:v0.29.7
     container_name: headscale
     volumes:
       - ./headscale/config:/etc/headscale
@@ -14,10 +13,12 @@ services:
     command: serve
     restart: unless-stopped
     labels:
-      - wud.tag.include=^v\d+\.\d+$$
+      - wud.tag.include=^v\d+\.\d+\.\d+$$
+      - wud.tag.exclude=^v\d+\.\d+\.0$$
+      - wud.watch.delay=14d
   headplane:
     container_name: headplane
-    image: ghcr.io/tale/headplane:0.6.0
+    image: ghcr.io/tale/headplane:0.8.2
     restart: unless-stopped
     volumes:
       - './headplane/config/config.yaml:/etc/headplane/config.yaml'
@@ -28,6 +29,7 @@ services:
       - traefik-net
     labels:
       - wud.tag.include=^\d+\.\d+\.\d+$$
+      - wud.watch.delay=14d
 
 networks:
   traefik-net:
