@@ -35,6 +35,7 @@ Available stacks are not a list of services deployed by any particular operator.
 | [jellyfin](jellyfin/) | Media library and streaming | [Compose](jellyfin/docker-compose.yml) |
 | [label-studio](label-studio/) | Data labeling with PostgreSQL | [Compose](label-studio/docker-compose.yml) |
 | [navidrome](navidrome/) | Music library server | [Compose](navidrome/docker-compose.yml) |
+| [netbird](netbird/README.md) | WireGuard mesh VPN control server and dashboard | [Compose](netbird/docker-compose.yml) |
 | [nextcloud](nextcloud/) | File sync and collaboration | [Compose](nextcloud/docker-compose.yml) |
 | [ollama](ollama/) | Local model inference | [Compose](ollama/docker-compose.yml) |
 | [open-webui](open-webui/) | Browser interface for AI backends | [Compose](open-webui/docker-compose.yml) |

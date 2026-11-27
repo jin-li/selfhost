@@ -1,0 +1,47 @@
+http:
+  routers:
+    # Dashboard UI router
+    netbird-dashboard:
+      rule: Host(`netbird.example.com`)
+      entryPoints:
+        - websecure
+      service: netbird-dashboard
+      priority: 1
+      tls: {}
+
+    # gRPC router for management and signal exchange
+    netbird-grpc:
+      rule: Host(`netbird.example.com`) && (PathPrefix(`/signalexchange.SignalExchange/`) || PathPrefix(`/management.ManagementService/`))
+      entryPoints:
+        - websecure
+      service: netbird-server-h2c
+      priority: 2
+      tls: {}
+
+    # Backend router for relay, WebSocket, API, and OAuth2
+    netbird-backend:
+      rule: Host(`netbird.example.com`) && (PathPrefix(`/relay`) || PathPrefix(`/ws-proxy/`) || PathPrefix(`/api`) || PathPrefix(`/oauth2`))
+      entryPoints:
+        - websecure
+      service: netbird-server
+      priority: 2
+      tls: {}
+
+  services:
+    # Dashboard service
+    netbird-dashboard:
+      loadBalancer:
+        servers:
+          - url: http://netbird-dashboard:80
+
+    # NetBird server with h2c protocol for gRPC over HTTP/2
+    netbird-server-h2c:
+      loadBalancer:
+        servers:
+          - url: h2c://netbird-server:80
+
+    # NetBird server for regular HTTP traffic
+    netbird-server:
+      loadBalancer:
+        servers:
+          - url: http://netbird-server:80

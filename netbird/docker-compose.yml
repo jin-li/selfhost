@@ -1,0 +1,38 @@
+services:
+  # UI dashboard
+  dashboard:
+    image: netbirdio/dashboard:v2.99.0
+    container_name: netbird-dashboard
+    restart: unless-stopped
+    networks: [traefik-net]
+    env_file:
+      - ./dashboard.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  # Combined server (Management + Signal + Relay + STUN)
+  netbird-server:
+    image: netbirdio/netbird-server:0.83.2
+    environment:
+      GOMEMLIMIT: "96MiB"
+    container_name: netbird-server
+    restart: unless-stopped
+    networks: [traefik-net]
+    ports:
+      - '3478:3478/udp'
+    volumes:
+      - ./data:/var/lib/netbird
+      - ./config.yaml:/etc/netbird/config.yaml
+    command: ["--config", "/etc/netbird/config.yaml"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+networks:
+  traefik-net:
+    external: true
